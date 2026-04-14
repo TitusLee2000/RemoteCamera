@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: remotecamera
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: STUN_SERVER
+        value: stun:stun.l.google.com:19302
