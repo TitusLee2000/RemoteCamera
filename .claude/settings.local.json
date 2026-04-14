@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"C:/Users/titus/OneDrive/Desktop/RemoteCamera/.claude/agents\")",
+      "Bash(mkdir -p \"C:/Users/titus/OneDrive/Desktop/RemoteCamera/.claude/skills/remotecamera-orchestrator\")",
+      "Bash(mkdir -p \"C:/Users/titus/OneDrive/Desktop/RemoteCamera/.claude/skills/server-build\")",
+      "Bash(mkdir -p \"C:/Users/titus/OneDrive/Desktop/RemoteCamera/.claude/skills/phone-client-build\")",
+      "Bash(mkdir -p \"C:/Users/titus/OneDrive/Desktop/RemoteCamera/.claude/skills/dashboard-build\")"
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+# RemoteCamera — PRD
+
+## Overview
+A web application that repurposes old smartphones as surveillance cameras.
+The system consists of three components: a phone-side web client, a
+Node.js streaming server, and a browser-based dashboard.
+
+## Goals
+- Let any phone with a browser become a live camera with zero app install
+- View all feeds from a single dashboard
+- Run entirely on a local network (LAN-first)
+
+## Features
+
+### Phone Client
+- Open a URL on the phone → immediately starts streaming
+- Camera selection (front/back)
+- Displays connection status
+
+### Server
+- Accepts incoming streams from phones
+- Assigns each phone a unique camera ID
+- Serves the dashboard
+- REST API: list cameras, get stream URL
+
+### Dashboard
+- Grid view of all active camera feeds
+- Full-screen mode per feed
+- Camera name + online/offline badge
+- Auto-refreshes when cameras connect/disconnect
+
+## Out of Scope (v1)
+- Recording / playback
+- Motion detection
+- External (WAN) access
+- Mobile app (native)
+
+## Tech Stack (proposed)
+- Phone client: Vanilla JS + WebRTC or MJPEG via getUserMedia
+- Server: Node.js + Express + ws (WebSockets) or mediasoup/simple-peer
+- Dashboard: React or Vanilla JS
+- Signaling: WebSocket

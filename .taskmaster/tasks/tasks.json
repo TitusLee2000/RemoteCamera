@@ -1,0 +1,144 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Project initialization and dependency setup",
+        "description": "Initialize Node.js project, install dependencies, and set up project structure",
+        "details": "1. Initialize package.json with `npm init`\n2. Install server dependencies: express, ws (WebSocket), cors\n3. Install dev dependencies: nodemon\n4. Create folder structure:\n   - /server (Node.js backend)\n   - /public/phone (Phone client HTML/JS)\n   - /public/dashboard (Dashboard HTML/JS or React)\n5. Create .gitignore for node_modules, .env\n6. Set up npm scripts: 'start', 'dev'\n7. Create basic server/index.js entry point\n8. Configure Express to serve static files from /public",
+        "testStrategy": "Verify package.json exists with correct dependencies, run `npm install` successfully, start server with `npm run dev` and confirm it runs without errors on specified port (e.g., 3000)",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Implement WebSocket signaling server",
+        "description": "Build WebSocket server for real-time signaling between phones and dashboard",
+        "details": "1. Create server/websocket.js module\n2. Initialize WebSocket server using 'ws' package attached to HTTP server\n3. Implement message handling for:\n   - 'register-camera': assign unique camera ID, store camera metadata (timestamp, connection)\n   - 'offer': relay WebRTC offer from phone to dashboard\n   - 'answer': relay WebRTC answer from dashboard to phone\n   - 'ice-candidate': relay ICE candidates bidirectionally\n   - 'disconnect': clean up camera from active list\n4. Maintain in-memory Map of active cameras: {cameraId: {ws, timestamp, name}}\n5. Broadcast camera list updates to all dashboard clients when cameras connect/disconnect\n6. Implement heartbeat/ping-pong to detect dead connections\n7. Handle WebSocket errors and cleanup",
+        "testStrategy": "Use WebSocket test client (wscat or browser console) to connect, send register-camera message, verify unique ID assignment. Test multiple connections and verify camera list broadcasts. Test disconnect and verify cleanup.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Create REST API for camera management",
+        "description": "Build Express REST endpoints to list cameras and retrieve stream metadata",
+        "details": "1. Create server/routes/cameras.js\n2. Implement GET /api/cameras - returns JSON array of active cameras [{id, name, status, connectedAt}]\n3. Implement GET /api/cameras/:id - returns single camera details\n4. Wire routes into main Express app\n5. Add CORS middleware for local network access\n6. Return proper HTTP status codes (200, 404, 500)\n7. Use the same in-memory camera Map from WebSocket server",
+        "testStrategy": "Test endpoints with curl or Postman: GET /api/cameras returns empty array initially, register camera via WebSocket, verify GET /api/cameras returns the camera, test GET /api/cameras/:id with valid and invalid IDs",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Build phone client web interface",
+        "description": "Create vanilla JS web page that captures camera stream and establishes WebRTC connection",
+        "details": "1. Create public/phone/index.html with minimal UI:\n   - Camera selection dropdown (front/back)\n   - Connection status indicator\n   - Video preview element (optional)\n2. Create public/phone/app.js:\n   - Use navigator.mediaDevices.getUserMedia({video: {facingMode: 'user'}, audio: false})\n   - Implement camera switching (facingMode: 'user' vs 'environment')\n   - Create RTCPeerConnection with STUN servers (e.g., stun:stun.l.google.com:19302)\n   - Connect to WebSocket server at ws://[SERVER_IP]:3000\n   - Send 'register-camera' message on connection\n   - Handle incoming 'answer' and 'ice-candidate' messages from dashboard\n   - Create and send WebRTC offer with local stream\n   - Display connection status (connecting, connected, disconnected)\n3. Add basic CSS for mobile-friendly layout\n4. Handle errors (camera permission denied, connection failed)",
+        "testStrategy": "Open phone client on mobile browser, grant camera permissions, verify video preview appears, check WebSocket connection in browser DevTools, verify camera registration message sent to server",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Build dashboard web interface structure",
+        "description": "Create dashboard HTML/JS foundation with camera grid layout",
+        "details": "Decision point: Use React (Vite) OR Vanilla JS based on preference\n\nVanilla JS approach:\n1. Create public/dashboard/index.html with:\n   - Grid container for camera feeds\n   - Auto-refresh toggle\n2. Create public/dashboard/app.js:\n   - Fetch camera list from GET /api/cameras on load\n   - Dynamically create grid items for each camera\n   - Each grid item: <video> element + camera name + status badge\n   - Auto-refresh every 5 seconds to detect new/disconnected cameras\n   - WebSocket connection to receive real-time camera list updates\n3. Create public/dashboard/styles.css:\n   - CSS Grid layout (responsive: 1 col mobile, 2 cols tablet, 3-4 cols desktop)\n   - Status badge styles (online=green, offline=gray)\n4. Handle empty state (no cameras connected)",
+        "testStrategy": "Open dashboard in browser, verify grid layout renders, check GET /api/cameras is called on load, manually connect phone client and verify dashboard updates to show new camera",
+        "priority": "high",
+        "dependencies": [
+          1,
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Implement WebRTC peer connection in dashboard",
+        "description": "Add WebRTC client code to dashboard to receive and display camera streams",
+        "details": "1. In public/dashboard/app.js, create RTCPeerConnection for each camera\n2. Use same STUN servers as phone client\n3. WebSocket message handlers:\n   - On 'offer' from phone: create RTCPeerConnection, setRemoteDescription(offer), create answer, send 'answer' back\n   - On 'ice-candidate': addIceCandidate to appropriate peer connection\n4. On 'track' event: attach remote stream to corresponding <video> element using video.srcObject = event.streams[0]\n5. Store peer connections in Map: {cameraId: RTCPeerConnection}\n6. Clean up peer connections when cameras disconnect\n7. Auto-play videos when stream available (video.autoplay = true, video.playsInline = true)\n8. Handle connection state changes (connecting, connected, failed, disconnected)",
+        "testStrategy": "Connect phone client, verify dashboard receives WebRTC offer via WebSocket, verify answer is sent back, check browser DevTools for ICE candidate exchange, confirm video stream appears in dashboard <video> element, verify multiple cameras can stream simultaneously",
+        "priority": "high",
+        "dependencies": [
+          4,
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Add fullscreen mode for camera feeds",
+        "description": "Implement click-to-fullscreen functionality for individual camera feeds",
+        "details": "1. Add click event listener to each video element in dashboard\n2. Use Fullscreen API:\n   - video.requestFullscreen() or video.webkitRequestFullscreen() for Safari\n   - Handle vendor prefixes (webkit, moz, ms)\n3. Add fullscreen exit on Escape key or clicking exit button\n4. Maintain video stream during fullscreen transition\n5. Add fullscreen icon overlay on video hover\n6. Handle fullscreen errors (not supported, user denied)",
+        "testStrategy": "Click on a camera feed in dashboard, verify it enters fullscreen mode, press Escape to exit, test on multiple browsers (Chrome, Safari, Firefox), verify video continues playing during transitions",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Implement camera naming and identification",
+        "description": "Allow users to assign names to cameras and persist identification",
+        "details": "1. Generate unique camera ID on server using uuid or timestamp+random\n2. Store camera name in localStorage on phone client (key: 'remotecamera-name')\n3. Phone client: on first load, prompt for camera name or auto-generate (e.g., 'Camera-XXXX')\n4. Send camera name in 'register-camera' message payload\n5. Server: store camera name in camera Map\n6. Dashboard: display camera name in grid item header\n7. Add inline edit functionality in dashboard to rename cameras\n8. On rename: send WebSocket message to update camera name on server\n9. Server broadcasts name change to all dashboard clients",
+        "testStrategy": "Open phone client, set camera name, refresh page and verify name persists, view dashboard and confirm name displays, rename camera from dashboard and verify change reflects immediately across all dashboard instances",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Add connection status indicators and error handling",
+        "description": "Display real-time connection status and handle network/connection errors gracefully",
+        "details": "1. Phone client:\n   - Show status: 'Connecting...', 'Connected', 'Disconnected', 'Error'\n   - Update status based on WebSocket readyState and RTCPeerConnection.connectionState\n   - Display error messages for camera permission denied, WebSocket connection failed, WebRTC connection failed\n   - Add reconnection logic with exponential backoff (max 5 retries)\n2. Dashboard:\n   - Status badge per camera: online (green), offline (gray), error (red)\n   - Update badge based on camera list from server\n   - Show tooltip with last connected timestamp\n   - Gray out/remove video element when camera disconnects\n3. Server:\n   - Log connection events (camera connected, disconnected, errors)\n   - Send connection status in camera list API",
+        "testStrategy": "Simulate network interruption (disable WiFi), verify phone client shows 'Disconnected' and attempts reconnection, verify dashboard updates status badge to offline, restore network and confirm automatic reconnection, deny camera permission and verify error message displays",
+        "priority": "medium",
+        "dependencies": [
+          6,
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Create documentation and deployment guide",
+        "description": "Write comprehensive README and setup instructions for local network deployment",
+        "details": "1. Update README.md with:\n   - Project overview and features\n   - Prerequisites (Node.js version)\n   - Installation steps (git clone, npm install)\n   - Configuration (server IP, port)\n   - Running the server (npm start)\n   - Accessing phone client: http://[SERVER_IP]:3000/phone\n   - Accessing dashboard: http://[SERVER_IP]:3000/dashboard\n   - Troubleshooting (firewall, HTTPS requirements for getUserMedia, camera permissions)\n2. Create .env.example for configuration:\n   - PORT=3000\n   - STUN_SERVER=stun:stun.l.google.com:19302\n3. Document WebRTC limitations:\n   - Requires HTTPS in production (getUserMedia restriction)\n   - localhost exception for development\n   - LAN IP access may require HTTPS with self-signed cert\n4. Add architecture diagram (optional)\n5. Add license information",
+        "testStrategy": "Follow README instructions from scratch on a fresh machine/VM, verify all steps work, test phone client and dashboard access from different devices on same network, validate .env.example contains all necessary config",
+        "priority": "low",
+        "dependencies": [
+          9
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2026-04-13T23:48:46.531Z",
+      "updated": "2026-04-13T23:48:46.532Z",
+      "description": "Tasks for master context"
+    }
+  }
+}
