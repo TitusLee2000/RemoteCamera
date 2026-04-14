@@ -35,7 +35,8 @@
 
     <!-- Dim overlay — shown when lock is active -->
     <div id="lockOverlay" class="lock-overlay" hidden>
-      <p class="lock-hint">Swipe up to unlock</p>
+      <button id="lockClose" class="lock-close" type="button" aria-label="Unlock">✕</button>
+      <p class="lock-hint">Swipe up or drag to unlock</p>
     </div>
 
     <section class="status-row">
@@ -46,9 +47,9 @@
     <section class="error-box" id="errorBox" role="alert" hidden></section>
 
     <footer class="notes">
-      <p><strong>Heads up (iPhone / Safari):</strong> the camera requires HTTPS. Loading this page over plain http:// from another device will not work in Safari.</p>
-      <p><strong>Android / Chrome:</strong> http:// works on the local network.</p>
-      <p>Keep this tab open and the screen unlocked while streaming.</p>
+      <p><strong>Lock Screen:</strong> once streaming, tap Lock Screen to dim the display and block accidental touches. Swipe up to unlock.</p>
+      <p><strong>Stay on this page:</strong> switching apps or closing the tab will stop the stream.</p>
+      <p><strong>All browsers supported:</strong> this page is served over HTTPS so camera access works on iPhone Safari, Android Chrome, and others.</p>
     </footer>
   </main>
 

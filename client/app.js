@@ -312,7 +312,10 @@ function deactivateLock() {
 
 lockBtn.addEventListener('click', activateLock);
 
-// Swipe-up gesture to unlock: track touchstart Y, on touchend check delta.
+// (x) button — fallback for desktop
+document.getElementById('lockClose').addEventListener('click', deactivateLock);
+
+// Touch: swipe up ≥60px to unlock (mobile)
 let touchStartY = 0;
 lockOverlay.addEventListener('touchstart', (e) => {
   touchStartY = e.touches[0].clientY;
@@ -320,5 +323,16 @@ lockOverlay.addEventListener('touchstart', (e) => {
 
 lockOverlay.addEventListener('touchend', (e) => {
   const delta = touchStartY - e.changedTouches[0].clientY;
-  if (delta > 60) deactivateLock(); // swipe up ≥60px unlocks
+  if (delta > 60) deactivateLock();
 }, { passive: true });
+
+// Mouse: click-and-drag up ≥60px to unlock (desktop)
+let mouseStartY = 0;
+lockOverlay.addEventListener('mousedown', (e) => {
+  mouseStartY = e.clientY;
+});
+
+lockOverlay.addEventListener('mouseup', (e) => {
+  const delta = mouseStartY - e.clientY;
+  if (delta > 60) deactivateLock();
+});
