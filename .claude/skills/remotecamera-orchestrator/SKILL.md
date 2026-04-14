@@ -1,26 +1,28 @@
 ---
 name: remotecamera-orchestrator
-description: "Orchestrates the full RemoteCamera build — server, phone client, and dashboard. Use when building the whole app, starting the project, wiring all three components together, or when the user says 'build it', 'start building', 'implement the app', 'build RemoteCamera'. Also triggers for: rebuild, re-run, update all components, fix integration, partial rebuild (e.g. 'rebuild just the server'), and any cross-cutting changes that affect multiple components. This skill coordinates server-agent, phone-client-agent, and dashboard-agent."
+description: "Orchestrates the full RemoteCamera build — server, phone client, dashboard, and tests. Use when building the whole app, starting the project, wiring all three components together, or when the user says 'build it', 'start building', 'implement the app', 'build RemoteCamera'. Also triggers for: rebuild, re-run, update all components, fix integration, partial rebuild (e.g. 'rebuild just the server'), write tests, run tests, add test coverage, and any cross-cutting changes that affect multiple components. This skill coordinates server-agent, phone-client-agent, dashboard-agent, and test-agent."
 ---
 
 # RemoteCamera Orchestrator
 
-Coordinates three sub-agents to build a complete LAN WebRTC camera surveillance app: a Node.js signaling server, a mobile phone client, and a browser dashboard.
+Coordinates four sub-agents to build a complete LAN WebRTC camera surveillance app: a Node.js signaling server, a mobile phone client, a browser dashboard, and a test suite.
 
 ## Execution Mode: Sub-Agent (Hybrid Pipeline)
 
 - Phase 1 (Protocol): Inline — orchestrator writes the shared protocol document
-- Phase 2 (Server): Sub-agent (sequential — must complete before clients)
+- Phase 2 (Server): Sub-agent (sequential — must complete before others)
 - Phase 3 (Client + Dashboard): Two sub-agents in parallel (`run_in_background: true`)
-- Phase 4 (Integration check): Inline — orchestrator verifies file structure
+- Phase 4 (Tests): Sub-agent (sequential — runs after server is built, writes tests TDD-style)
+- Phase 5 (Integration check): Inline — orchestrator verifies file structure and reports
 
 ## Agent Roster
 
-| Agent | File | Skill | Output |
-|-------|------|-------|--------|
+| Agent | File | Skills | Output |
+|-------|------|--------|--------|
 | server-agent | `.claude/agents/server-agent.md` | server-build | `server/` |
 | phone-client-agent | `.claude/agents/phone-client-agent.md` | phone-client-build | `client/` |
-| dashboard-agent | `.claude/agents/dashboard-agent.md` | dashboard-build | `dashboard/` |
+| dashboard-agent | `.claude/agents/dashboard-agent.md` | dashboard-build, ui-ux-pro-max | `dashboard/` |
+| test-agent | `.claude/agents/test-agent.md` | remotecamera-test, test-driven-development | `server/test/` |
 
 ---
 
@@ -219,27 +221,61 @@ Agent(
 
 Wait for both background agents to complete.
 
-### Phase 4: Integration Check
+### Phase 4: Write Tests (Sequential)
+
+Invoke test-agent after the server is built. Tests are written TDD-style against the real server code — the agent reads the server source, writes failing tests first, then ensures they pass.
+
+```
+Agent(
+  description: "Write RemoteCamera server tests",
+  subagent_type: "test-agent",
+  model: "opus",
+  prompt: "
+    You are the test-agent for RemoteCamera. Read your agent definition at
+    .claude/agents/test-agent.md.
+    Read your skills:
+      - .claude/skills/remotecamera-test/SKILL.md (project-specific test context)
+      - ~/.claude/skills/test-driven-development/SKILL.md (TDD rules — Red/Green/Refactor)
+    Read the signaling protocol at _workspace/protocol.md.
+    Read the server source in server/ to understand the current implementation.
+    
+    Write tests for all signaling behaviors defined in the protocol using TDD.
+    The server/index.js must export a createApp() factory (not auto-listen) — add this
+    export if it's missing before writing tests.
+    
+    When done, write results to _workspace/test-done.md including:
+    - which tests pass
+    - which behaviors need manual browser testing (list them)
+  "
+)
+```
+
+Wait for test-agent to complete.
+
+### Phase 5: Integration Check
 
 Verify the build is complete and coherent:
 
 1. Check these files exist:
    - `server/index.js`, `server/package.json`, `server/signaling.js`
+   - `server/test/signaling.test.js`, `server/test/integration.test.js`
    - `client/index.html`, `client/app.js`
    - `dashboard/index.html`, `dashboard/app.js`
 
-2. Read `_workspace/server-done.md`, `_workspace/client-done.md`, `_workspace/dashboard-done.md` — note any deviations from the protocol.
+2. Read `_workspace/server-done.md`, `_workspace/client-done.md`, `_workspace/dashboard-done.md`, `_workspace/test-done.md` — note any deviations or test failures.
 
 3. Report to user:
    - What was built
+   - Test results summary
+   - Behaviors that need manual browser testing
    - How to run it (server first, then open client + dashboard)
    - Any deviations or known limitations
-   - Next steps / how to test on LAN
 
 ## Error Handling
 
-- If server-agent fails: do not proceed to Phase 3. Report the error. The client agents depend on the protocol being confirmed.
+- If server-agent fails: do not proceed to Phase 3 or 4. Report the error. All other agents depend on the server being built.
 - If one of Phase 3 agents fails: continue with the other, note the failure in the report.
+- If test-agent fails: note the failure but still proceed to Phase 5. Report which tests couldn't be written.
 - If an agent deviates from the protocol: note the deviation in the integration report. Do not auto-correct — surface it to the user.
 
 ## Data Flow
@@ -249,8 +285,10 @@ Orchestrator writes _workspace/protocol.md
          ↓
    server-agent reads protocol → builds /server
          ↓
-   phone-client-agent reads protocol → builds /client   (parallel)
-   dashboard-agent reads protocol → builds /dashboard   (parallel)
+   phone-client-agent reads protocol → builds /client      (parallel)
+   dashboard-agent reads protocol → builds /dashboard      (parallel, uses ui-ux-pro-max)
+         ↓
+   test-agent reads protocol + server/ → writes server/test/ (TDD, uses test-driven-development)
          ↓
    Orchestrator reads *-done.md → integration report → user
 ```

@@ -20,7 +20,8 @@ Web app that turns old phones into live surveillance cameras (school project).
 ## Agents
 - `phone-client-agent` — owns /client (camera capture, WebRTC, mobile UI)
 - `server-agent` — owns /server (Express, WebSocket signaling, camera registry)
-- `dashboard-agent` — owns /dashboard (stream viewer, camera grid UI)
+- `dashboard-agent` — owns /dashboard (stream viewer, camera grid UI; uses ui-ux-pro-max)
+- `test-agent` — owns /server/test (TDD signaling tests; uses test-driven-development)
 
 ## 하네스: RemoteCamera
 
@@ -32,6 +33,7 @@ Web app that turns old phones into live surveillance cameras (school project).
 | 날짜 | 변경 내용 | 대상 | 사유 |
 |------|----------|------|------|
 | 2026-04-13 | 초기 구성 | 전체 | - |
+| 2026-04-13 | test-agent 추가, dashboard-agent에 ui-ux-pro-max 연결 | agents/, skills/ | 사용자 요청 |
 
 ## Key Constraints
 - Must work on LAN without internet

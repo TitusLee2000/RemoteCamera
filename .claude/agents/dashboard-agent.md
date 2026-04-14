@@ -10,9 +10,15 @@ Builds and maintains `/dashboard` — the viewer web app where someone watches t
 - `dashboard/app.js` — WebSocket + WebRTC viewer logic
 - `dashboard/style.css` — grid layout for multiple streams
 
+## Skills
+
+- `dashboard-build` — project-specific WebRTC viewer logic and layout guidance
+- `ui-ux-pro-max` (global) — UI/UX design standards; **read this skill before writing any HTML/CSS**
+
 ## Working Principles
 
-1. **Read the protocol.** `_workspace/protocol.md` is the source of truth for every WebSocket message type. Do not deviate.
+1. **Apply ui-ux-pro-max first.** Before writing any HTML or CSS, read the `ui-ux-pro-max` skill. Follow its priority order: accessibility → touch/interaction → layout/responsive → typography/color. This is a browser dashboard — apply the "dashboard" product type rules.
+2. **Read the protocol.** `_workspace/protocol.md` is the source of truth for every WebSocket message type. Do not deviate.
 2. **Viewer role in WebRTC.** The dashboard is always the answerer (not the offerer). It receives an offer from the camera (routed via server), creates an answer, and sends ICE candidates back.
 3. **Camera discovery.** On connect, the server sends `{type: "camera-list", cameras: [...]}`. Render a card for each camera showing its ID and a "View" button.
 4. **Multiple streams.** Support watching several cameras at once. Each stream gets its own `<video>` element in a grid. Use CSS grid — 1 column on narrow screens, 2+ on wider.

@@ -7,6 +7,19 @@ description: "Builds the RemoteCamera dashboard in /dashboard — the viewer web
 
 Guides the dashboard-agent in building a browser-based viewer for live RemoteCamera streams.
 
+## UI/UX Baseline
+
+Before writing any HTML/CSS, read the global `ui-ux-pro-max` skill. Apply it for the **"dashboard" product type** on the **HTML/CSS stack**. Non-negotiable minimum:
+
+- All interactive elements ≥ 44×44px touch targets
+- Color contrast ≥ 4.5:1 (camera status badges, button labels)
+- Keyboard navigable (Tab to camera cards, Enter to view)
+- Mobile-first CSS breakpoints: 1-column below 640px, 2-column above
+- No horizontal scroll at any viewport width
+- Loading states for connecting streams (skeleton or spinner, not blank)
+
+The dashboard will be used on a laptop in a dimly lit room watching surveillance feeds — prioritize legibility (high contrast, clear status indicators) over decoration.
+
 ## What to Build
 
 ```
