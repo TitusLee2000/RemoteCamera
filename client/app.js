@@ -1,13 +1,11 @@
 // RemoteCamera phone client
 // =========================================================================
 // CONFIG
-// Change SERVER_URL to your signaling server's address on your local network.
-// Examples:
-//   const SERVER_URL = 'ws://localhost:3001'         // testing on same machine
-//   const SERVER_URL = 'ws://192.168.1.42:3001'      // server's LAN IP
-//   const SERVER_URL = 'wss://camera.example.com'    // production / HTTPS
-// On iPhone Safari, getUserMedia requires HTTPS — so use wss:// + https://.
-const SERVER_URL = 'ws://10.132.110.75:3001';
+// SERVER_URL auto-detects based on current page protocol and host.
+// Works on LAN (ws://) and in production (wss://) with no manual changes.
+// Override by setting window.SERVER_URL_OVERRIDE before this script loads.
+const SERVER_URL = window.SERVER_URL_OVERRIDE ??
+  `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
 
 // STUN server is used so peers can discover their public IP for NAT traversal.
 // Google's public STUN server works for most home networks. Replace with your

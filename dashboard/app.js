@@ -2,8 +2,11 @@
 // Viewer (answerer) role. Connects to the signaling server, lists cameras,
 // and sets up WebRTC peer connections to receive video streams.
 
-// Change this to your server's IP address on the local network
-const SERVER_URL = 'ws://10.132.110.75:3001';
+// SERVER_URL auto-detects based on current page protocol and host.
+// Works on LAN (ws://) and in production (wss://) with no manual changes.
+// Override by setting window.SERVER_URL_OVERRIDE before this script loads.
+const SERVER_URL = window.SERVER_URL_OVERRIDE ??
+  `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
 // Public Google STUN server for NAT traversal on local networks
 const STUN_SERVER = 'stun:stun.l.google.com:19302';
 
