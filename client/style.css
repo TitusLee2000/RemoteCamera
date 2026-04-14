@@ -1,0 +1,218 @@
+/* RemoteCamera phone client - mobile-first */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #0f172a;
+  color: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.header {
+  text-align: center;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: 0.5px;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.id-card {
+  background: #1e293b;
+  border: 2px solid #334155;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+}
+
+.id-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  color: #94a3b8;
+}
+
+.id-value {
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  color: #38bdf8;
+}
+
+.id-hint {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.video-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: #000;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #334155;
+}
+
+#preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.video-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  font-size: 14px;
+  text-align: center;
+  padding: 16px;
+}
+
+.video-placeholder[hidden] {
+  display: none;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+button {
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 600;
+  padding: 18px 20px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  min-height: 56px;
+  width: 100%;
+  touch-action: manipulation;
+}
+
+.primary-btn {
+  background: #38bdf8;
+  color: #0f172a;
+}
+
+.primary-btn:active {
+  background: #0ea5e9;
+}
+
+.primary-btn:disabled {
+  background: #475569;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.secondary-btn {
+  background: transparent;
+  color: #f1f5f9;
+  border: 2px solid #475569;
+}
+
+.secondary-btn:active {
+  background: #1e293b;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.status-label {
+  color: #94a3b8;
+}
+
+.status-value {
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.status-idle {
+  background: #334155;
+  color: #cbd5e1;
+}
+
+.status-connecting {
+  background: #facc15;
+  color: #422006;
+}
+
+.status-live {
+  background: #22c55e;
+  color: #052e16;
+}
+
+.status-error {
+  background: #ef4444;
+  color: #450a0a;
+}
+
+.error-box {
+  background: #7f1d1d;
+  color: #fee2e2;
+  border: 1px solid #ef4444;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.notes {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.notes p {
+  margin: 6px 0;
+}
+
+.notes strong {
+  color: #e2e8f0;
+}

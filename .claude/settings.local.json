@@ -5,7 +5,11 @@
       "Bash(mkdir -p \"C:/Users/titus/OneDrive/Desktop/RemoteCamera/.claude/skills/remotecamera-orchestrator\")",
       "Bash(mkdir -p \"C:/Users/titus/OneDrive/Desktop/RemoteCamera/.claude/skills/server-build\")",
       "Bash(mkdir -p \"C:/Users/titus/OneDrive/Desktop/RemoteCamera/.claude/skills/phone-client-build\")",
-      "Bash(mkdir -p \"C:/Users/titus/OneDrive/Desktop/RemoteCamera/.claude/skills/dashboard-build\")"
+      "Bash(mkdir -p \"C:/Users/titus/OneDrive/Desktop/RemoteCamera/.claude/skills/dashboard-build\")",
+      "Bash(node --check index.js)",
+      "Bash(node --check signaling.js)",
+      "Bash(npm test:*)",
+      "Bash(npm install:*)"
     ]
   }
 }

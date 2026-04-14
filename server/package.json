@@ -1,0 +1,17 @@
+{
+  "name": "remotecamera-server",
+  "version": "1.0.0",
+  "description": "Signaling server for RemoteCamera — relays WebRTC offers/answers/ICE between phone cameras and dashboard viewers.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "node --test test/signaling.test.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  }
+}
