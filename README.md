@@ -2,21 +2,39 @@
 Repurpose old phones for personal remote camera use
 How to run
 
-## 1. Start the server
+How to run it (no cloning needed)
+
+## Step 1 — Find your computer's LAN IP *Windows*
+
+`ipconfig`
+
+Look for "IPv4 Address" under your WiFi adapter, e.g.       
+`192.168.1.42`
+
+## Step 2 — Edit the two config lines (one-time setup)
+
+client/app.js line ~6 change  
+localhost to your LAN IP:
+const SERVER_URL = `ws://10.65.70.213:3001`   // use your actual IP
+
+dashboard/app.js line ~6 — change 
+const SERVER_URL = `ws://10.65.70.213:3001`
+## Step 3 — Start the server
 ```
 cd server
 npm install
-node index.js        
+node index.js
 ```
-*listens on port 3001*
 
-## 2. Open dashboard in a browser (laptop/desktop)
+## Step 4 — Open on your phone (no install, no cloning)
 
-Double-click `dashboard/index.html` — or — open `http://localhost:3001`
+On your phone's browser, navigate to:
+http://192.168.1.42:3001/client
 
-## 3. Open phone client on your phone
-Change SERVER_URL in client/app.js to your LAN IP first:
-const SERVER_URL = 'ws://192.168.x.x:3001'
-Then open client/index.html on the phone, allow camera, tap "Start Streaming"
+## Step 5 — Open the dashboard on your computer
+http://192.168.1.42:3001/dashboard
 
-## 4. In the dashboard, click "View" next to the camera ID
+---
+
+Android: Works over plain http:// on LAN.
+iPhone: Safari requires HTTPS for camera access. For a quick workaround, use Chrome on Android, or set up a self-signed cert on the server.

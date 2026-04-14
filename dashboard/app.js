@@ -3,7 +3,7 @@
 // and sets up WebRTC peer connections to receive video streams.
 
 // Change this to your server's IP address on the local network
-const SERVER_URL = 'ws://localhost:3001';
+const SERVER_URL = 'ws://10.132.110.75:3001';
 // Public Google STUN server for NAT traversal on local networks
 const STUN_SERVER = 'stun:stun.l.google.com:19302';
 

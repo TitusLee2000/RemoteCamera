@@ -11,6 +11,7 @@ import { join, dirname } from 'path'
 import {
   cameras,
   viewers,
+  allClients,
   handleMessage,
   cleanup,
 } from './signaling.js'
@@ -27,7 +28,7 @@ export function createApp() {
   app.use(express.json())
 
   // Serve phone client and dashboard as static sites.
-  // Phone: http://<LAN-IP>:3001/client
+  // Phone:     http://<LAN-IP>:3001/client
   // Dashboard: http://<LAN-IP>:3001/dashboard
   app.use('/client', express.static(join(__dirname, '../client')))
   app.use('/dashboard', express.static(join(__dirname, '../dashboard')))
@@ -42,6 +43,13 @@ export function createApp() {
 
   wss.on('connection', (ws) => {
     console.log('[server] websocket connected')
+    allClients.add(ws)
+
+    // Send current camera list immediately so dashboards populate on connect
+    // without having to send viewer-join first. Phone client ignores this.
+    try {
+      ws.send(JSON.stringify({ type: 'camera-list', cameras: Array.from(cameras.keys()) }))
+    } catch {}
 
     ws.on('message', (raw) => {
       let msg
@@ -58,9 +66,10 @@ export function createApp() {
       }
     })
 
-    ws.on('close', () => cleanup(ws))
+    ws.on('close', () => { allClients.delete(ws); cleanup(ws) })
     ws.on('error', (err) => {
       console.warn('[server] ws error:', err?.message)
+      allClients.delete(ws)
       cleanup(ws)
     })
   })
@@ -96,6 +105,8 @@ if (isDirect || isDirectFallback) {
   const { httpServer } = createApp()
   httpServer.listen(PORT, () => {
     console.log(`[server] RemoteCamera signaling listening on :${PORT}`)
-    console.log(`[server] health: http://localhost:${PORT}/health`)
+    console.log(`[server] phone client:  http://localhost:${PORT}/client`)
+    console.log(`[server] dashboard:     http://localhost:${PORT}/dashboard`)
+    console.log(`[server] health:        http://localhost:${PORT}/health`)
   })
 }

@@ -6,6 +6,8 @@
 export const cameras = new Map()
 // viewers: viewerId → { ws, subscribedCamId }
 export const viewers = new Map()
+// allClients: every connected WebSocket (cameras + viewers + dashboards before viewer-join)
+export const allClients = new Set()
 
 /**
  * Safely send a JSON payload on a WebSocket. Swallow errors —
@@ -26,9 +28,8 @@ function send(ws, payload) {
  * Broadcast the current camera list to every connected viewer.
  */
 export function broadcastCameraList() {
-  const list = Array.from(cameras.keys())
-  const payload = { type: 'camera-list', cameras: list }
-  for (const { ws } of viewers.values()) {
+  const payload = { type: 'camera-list', cameras: Array.from(cameras.keys()) }
+  for (const ws of allClients) {
     send(ws, payload)
   }
 }
@@ -205,4 +206,5 @@ export function cleanup(ws) {
 export function _resetState() {
   cameras.clear()
   viewers.clear()
+  allClients.clear()
 }

@@ -7,7 +7,7 @@
 //   const SERVER_URL = 'ws://192.168.1.42:3001'      // server's LAN IP
 //   const SERVER_URL = 'wss://camera.example.com'    // production / HTTPS
 // On iPhone Safari, getUserMedia requires HTTPS — so use wss:// + https://.
-const SERVER_URL = 'ws://localhost:3001';
+const SERVER_URL = 'ws://10.132.110.75:3001';
 
 // STUN server is used so peers can discover their public IP for NAT traversal.
 // Google's public STUN server works for most home networks. Replace with your
@@ -61,15 +61,29 @@ startBtn.addEventListener('click', async () => {
   startBtn.disabled = true;
   setStatus('connecting');
 
+  // Check for secure context — Chrome hides mediaDevices on plain HTTP unless
+  // the origin is flagged as secure in chrome://flags.
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showError('Camera API unavailable. In Chrome, go to chrome://flags, enable "Insecure origins treated as secure", add http://10.132.110.75:3001, then tap Relaunch.');
+    startBtn.disabled = false;
+    return;
+  }
+
   try {
     // 1) Camera permission — must come from this click handler.
-    localStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment' },
-      audio: false,
-    });
+    // Try rear camera first; fall back to any camera if the constraint fails
+    // (Samsung Internet and some Android browsers reject facingMode constraints).
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+        audio: false,
+      });
+    } catch {
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    }
   } catch (err) {
     console.error('getUserMedia failed', err);
-    showError('Camera permission denied or unavailable. Please allow camera access in your browser settings and reload.');
+    showError('Camera error: ' + (err.name || '') + ' — ' + (err.message || err));
     startBtn.disabled = false;
     return;
   }

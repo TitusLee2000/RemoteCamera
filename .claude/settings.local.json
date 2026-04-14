@@ -9,7 +9,8 @@
       "Bash(node --check index.js)",
       "Bash(node --check signaling.js)",
       "Bash(npm test:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm uninstall:*)"
     ]
   }
 }
