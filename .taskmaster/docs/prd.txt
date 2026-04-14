@@ -40,3 +40,66 @@ Node.js streaming server, and a browser-based dashboard.
 - Server: Node.js + Express + ws (WebSockets) or mediasoup/simple-peer
 - Dashboard: React or Vanilla JS
 - Signaling: WebSocket
+
+---
+
+## Version 2 — Hosting & WAN Access
+
+### Goal
+Make the app accessible from anywhere, not just a local hotspot.
+A shareable URL replaces the hardcoded LAN IP.
+
+### Features
+- Deploy signaling server to a cloud platform (Railway / Render / Fly.io)
+- HTTPS served automatically by the platform (fixes getUserMedia on mobile without Chrome flags)
+- `SERVER_URL` dynamically derived from `window.location` so no manual IP editing
+- TURN server integration (Metered.ca free tier) for WebRTC connections across
+  strict NATs (mobile networks, school/office WiFi)
+- Environment-variable driven config (server URL, TURN credentials) via `.env`
+
+### Out of Scope (v2)
+- Recording / playback
+- Motion detection
+- Native mobile app
+- Multi-user auth / access control
+
+### Success Criteria
+- Phone on cellular + viewer on home WiFi → video stream works
+- No manual IP editing required after deploy
+- getUserMedia works on mobile Safari and Chrome without flags
+
+---
+
+## Version 3 — Motion Detection & Alerts
+
+### Goal
+Notify the user when something moves in a camera's field of view.
+
+### Features
+- Client-side motion detection using canvas pixel-diff (no server-side ML)
+- Sensitivity threshold configurable per camera
+- Dashboard alert when motion is detected (visual indicator + sound)
+- Motion event log in the dashboard (timestamp + camera ID)
+
+### Out of Scope (v3)
+- Recording triggered by motion
+- Push notifications / email alerts
+- AI-based object recognition
+
+---
+
+## Version 4 — Recording & Playback
+
+### Goal
+Allow camera feeds to be recorded and played back later.
+
+### Features
+- Record streams server-side (or client-side via MediaRecorder API — TBD)
+- Recordings stored with timestamp + camera ID
+- Playback UI in the dashboard
+- Basic clip management (list, delete)
+
+### Out of Scope (v4)
+- Cloud storage integration
+- Motion-triggered recording (considered for v4.1)
+- Video export / download
