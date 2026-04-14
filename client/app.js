@@ -30,6 +30,8 @@ const previewVideo = document.getElementById('preview');
 const placeholder = document.getElementById('videoPlaceholder');
 const startBtn = document.getElementById('startBtn');
 const stopBtn = document.getElementById('stopBtn');
+const lockBtn = document.getElementById('lockBtn');
+const lockOverlay = document.getElementById('lockOverlay');
 const statusEl = document.getElementById('status');
 const errorBox = document.getElementById('errorBox');
 
@@ -97,6 +99,7 @@ startBtn.addEventListener('click', async () => {
 
   startBtn.hidden = true;
   stopBtn.hidden = false;
+  lockBtn.hidden = false;
 });
 
 stopBtn.addEventListener('click', () => {
@@ -266,9 +269,56 @@ function teardown(finalState) {
   startBtn.hidden = false;
   startBtn.disabled = false;
   stopBtn.hidden = true;
+  lockBtn.hidden = true;
+  deactivateLock();
 
   if (finalState) setStatus(finalState);
 }
 
 // Clean up when the page is closed.
 window.addEventListener('pagehide', () => teardown());
+
+// ---------- Lock screen ----------
+let wakeLock = null;
+
+async function acquireWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+  } catch (_) { /* permission denied or not supported */ }
+}
+
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release(); wakeLock = null; }
+}
+
+// Re-acquire wake lock when the page becomes visible again (iOS/Android release
+// it automatically when the app goes to background).
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && lockOverlay && !lockOverlay.hidden) {
+    acquireWakeLock();
+  }
+});
+
+function activateLock() {
+  lockOverlay.hidden = false;
+  acquireWakeLock();
+}
+
+function deactivateLock() {
+  lockOverlay.hidden = true;
+  releaseWakeLock();
+}
+
+lockBtn.addEventListener('click', activateLock);
+
+// Swipe-up gesture to unlock: track touchstart Y, on touchend check delta.
+let touchStartY = 0;
+lockOverlay.addEventListener('touchstart', (e) => {
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+lockOverlay.addEventListener('touchend', (e) => {
+  const delta = touchStartY - e.changedTouches[0].clientY;
+  if (delta > 60) deactivateLock(); // swipe up ≥60px unlocks
+}, { passive: true });

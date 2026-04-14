@@ -216,3 +216,41 @@ button {
 .notes strong {
   color: #e2e8f0;
 }
+
+/* Lock screen button */
+.lock-btn {
+  background: #1e293b;
+  color: #94a3b8;
+  border: 2px solid #334155;
+  font-size: 15px;
+}
+
+.lock-btn:active {
+  background: #334155;
+}
+
+/* Full-screen dim overlay */
+.lock-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 9999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 60px;
+  touch-action: none;
+}
+
+.lock-overlay[hidden] {
+  display: none;
+}
+
+.lock-hint {
+  color: #334155;
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  user-select: none;
+  margin: 0;
+}
