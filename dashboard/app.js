@@ -136,8 +136,18 @@ function handleCameraList(camList) {
 
   camList.forEach(({ id: camId, locked }) => {
     if (!cameras[camId]) {
-      cameras[camId] = { status: 'idle', pc: null, dimmed: locked };
+      cameras[camId] = { status: 'idle', pc: null, dimmed: locked, removeTimer: null };
       renderCard(camId);
+    } else {
+      // Cancel pending removal if camera came back within the grace period
+      if (cameras[camId].removeTimer) {
+        clearTimeout(cameras[camId].removeTimer);
+        cameras[camId].removeTimer = null;
+      }
+      if (cameras[camId].status === 'offline') {
+        cameras[camId].status = 'idle';
+        updateCardStatus(camId, 'idle');
+      }
     }
     updateDimState(camId, locked);
   });
@@ -165,12 +175,23 @@ function markOffline(camId) {
     try { cam.pc.close(); } catch (e) {}
     cam.pc = null;
   }
-  // Remove the card entirely — camId changes on every phone page reload
-  // so keeping a stale offline card just clutters the dashboard.
-  delete cameras[camId];
-  const card = getCardEl(camId);
-  if (card) card.remove();
-  refreshEmptyState();
+
+  // Clear any existing removal timer (e.g. called twice in quick succession)
+  if (cam.removeTimer) clearTimeout(cam.removeTimer);
+
+  cam.status = 'offline';
+  updateCardStatus(camId, 'offline');
+
+  // Remove the card after 5 seconds if still offline.
+  // This handles brief WebSocket blips without flashing cards off the screen.
+  cam.removeTimer = setTimeout(() => {
+    if (cameras[camId]?.status === 'offline') {
+      delete cameras[camId];
+      const card = getCardEl(camId);
+      if (card) card.remove();
+      refreshEmptyState();
+    }
+  }, 5000);
 }
 
 // ============================================================
