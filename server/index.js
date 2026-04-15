@@ -45,15 +45,19 @@ export function createApp() {
     const apiKey = process.env.METERED_API_KEY
     const appName = process.env.METERED_APP_NAME
     if (apiKey && appName) {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 3000)
       try {
         const url = `https://${appName}.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`
-        const r = await fetch(url)
+        const r = await fetch(url, { signal: controller.signal })
+        clearTimeout(timeout)
         if (r.ok) {
           const servers = await r.json()
           return res.json(servers)
         }
         console.warn('[ice] Metered fetch failed, status', r.status)
       } catch (err) {
+        clearTimeout(timeout)
         console.warn('[ice] Metered fetch error:', err?.message)
       }
     }

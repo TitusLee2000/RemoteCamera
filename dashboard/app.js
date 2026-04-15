@@ -11,7 +11,9 @@ const SERVER_URL = window.SERVER_URL_OVERRIDE ??
 // out of client code. Falls back to STUN-only if the fetch fails (LAN use).
 async function getIceServers() {
   try {
-    const res = await fetch('/api/ice-servers')
+    const controller = new AbortController()
+    setTimeout(() => controller.abort(), 4000)
+    const res = await fetch('/api/ice-servers', { signal: controller.signal })
     if (res.ok) return await res.json()
   } catch {}
   return [{ urls: 'stun:stun.l.google.com:19302' }]

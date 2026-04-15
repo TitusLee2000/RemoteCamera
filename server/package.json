@@ -4,6 +4,9 @@
   "description": "Signaling server for RemoteCamera — relays WebRTC offers/answers/ICE between phone cameras and dashboard viewers.",
   "type": "module",
   "main": "index.js",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
