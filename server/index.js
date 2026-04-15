@@ -12,6 +12,7 @@ import {
   cameras,
   viewers,
   allClients,
+  cameraLockStates,
   handleMessage,
   cleanup,
 } from './signaling.js'
@@ -48,7 +49,13 @@ export function createApp() {
     // Send current camera list immediately so dashboards populate on connect
     // without having to send viewer-join first. Phone client ignores this.
     try {
-      ws.send(JSON.stringify({ type: 'camera-list', cameras: Array.from(cameras.keys()) }))
+      ws.send(JSON.stringify({
+        type: 'camera-list',
+        cameras: Array.from(cameras.keys()).map((id) => ({
+          id,
+          locked: cameraLockStates.get(id) ?? false,
+        })),
+      }))
     } catch {}
 
     ws.on('message', (raw) => {

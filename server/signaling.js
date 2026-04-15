@@ -109,7 +109,13 @@ function handleViewerJoin(ws, msg) {
   console.log(`[signaling] viewer joined: ${viewerId} → cam ${camId}`)
 
   // Always send the current camera list to this viewer on join.
-  send(ws, { type: 'camera-list', cameras: Array.from(cameras.keys()) })
+  send(ws, {
+    type: 'camera-list',
+    cameras: Array.from(cameras.keys()).map((id) => ({
+      id,
+      locked: cameraLockStates.get(id) ?? false,
+    })),
+  })
 
   const camWs = cameras.get(camId)
   if (!camWs) {
