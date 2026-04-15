@@ -61,8 +61,13 @@ export function createApp() {
         console.warn('[ice] Metered fetch error:', err?.message)
       }
     }
-    // Fallback: STUN only
-    res.json([{ urls: 'stun:stun.l.google.com:19302' }])
+    // Fallback: Open Relay free TURN (works on WAN without API key)
+    res.json([
+      { urls: 'stun:openrelay.metered.ca:80' },
+      { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+    ])
   })
 
   const httpServer = createServer(app)
