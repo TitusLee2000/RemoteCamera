@@ -191,19 +191,22 @@ async function handleRequestOffer(incomingViewerId) {
       }
     };
 
-    pc.onconnectionstatechange = () => {
-      console.log('[pc] connectionState =', pc.connectionState);
-      if (pc.connectionState === 'connected') {
+    // iceConnectionState is more reliable on iOS WebKit than connectionState.
+    pc.oniceconnectionstatechange = () => {
+      const state = pc.iceConnectionState;
+      console.log('[pc] iceConnectionState =', state);
+      if (state === 'connected' || state === 'completed') {
         setStatus('live');
-      } else if (pc.connectionState === 'failed') {
-        showError('Stream failed — please refresh.');
-      } else if (pc.connectionState === 'disconnected') {
+      } else if (state === 'failed') {
+        showError('Stream failed — ICE connection failed. Check network or try again.');
+      } else if (state === 'disconnected') {
         setStatus('connecting');
       }
     };
 
-    pc.oniceconnectionstatechange = () => {
-      console.log('[pc] iceConnectionState =', pc.iceConnectionState);
+    // connectionState as secondary fallback (not always reliable on iOS)
+    pc.onconnectionstatechange = () => {
+      console.log('[pc] connectionState =', pc.connectionState);
     };
 
     const offer = await pc.createOffer();

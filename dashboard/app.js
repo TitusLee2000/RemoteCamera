@@ -229,24 +229,32 @@ async function handleOffer(offer, camId) {
     }
   };
 
+  // Store the stream when tracks arrive but don't show LIVE yet —
+  // ontrack fires during SDP negotiation, before ICE connects and media flows.
   pc.ontrack = ({ streams }) => {
     const card = getCardEl(camId);
     if (!card) return;
     const video = card.querySelector('video');
-    if (video && streams[0]) {
-      video.srcObject = streams[0];
-    }
-    cam.status = 'live';
-    updateCardStatus(camId, 'live');
+    if (video && streams[0]) video.srcObject = streams[0];
   };
 
-  pc.onconnectionstatechange = () => {
-    const state = pc.connectionState;
-    console.log(`[pc:${camId}] state =`, state);
-    if (state === 'failed' || state === 'disconnected' || state === 'closed') {
+  // iceConnectionState is more reliable cross-browser (especially iOS WebKit)
+  // than connectionState. Use it as the primary signal for LIVE / error.
+  pc.oniceconnectionstatechange = () => {
+    const state = pc.iceConnectionState;
+    console.log(`[pc:${camId}] iceConnectionState =`, state);
+    if (state === 'connected' || state === 'completed') {
+      cam.status = 'live';
+      updateCardStatus(camId, 'live');
+    } else if (state === 'failed') {
       if (cameras[camId] && cameras[camId].status !== 'offline') {
         cam.status = 'error';
         updateCardStatus(camId, 'error');
+      }
+    } else if (state === 'disconnected') {
+      if (cameras[camId] && cameras[camId].status === 'live') {
+        cam.status = 'connecting';
+        updateCardStatus(camId, 'connecting');
       }
     }
   };
