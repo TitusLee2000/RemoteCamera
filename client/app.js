@@ -7,14 +7,15 @@
 const SERVER_URL = window.SERVER_URL_OVERRIDE ??
   `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
 
-// ICE servers for WebRTC NAT traversal.
-// STUN: discovers public IP. TURN: relays media when direct connection fails (required for WAN).
-const ICE_SERVERS = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'turn:openrelay.metered.ca:80',  username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-];
+// ICE servers are fetched from the server at runtime so credentials stay
+// out of client code. Falls back to STUN-only if the fetch fails (LAN use).
+async function getIceServers() {
+  try {
+    const res = await fetch('/api/ice-servers')
+    if (res.ok) return await res.json()
+  } catch {}
+  return [{ urls: 'stun:stun.l.google.com:19302' }]
+}
 // =========================================================================
 
 // Short random camera ID (e.g. "k3f9a2"). Shown to the user so they can
@@ -175,7 +176,8 @@ function send(obj) {
 async function handleRequestOffer(incomingViewerId) {
   viewerId = incomingViewerId;
   try {
-    pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    const iceServers = await getIceServers()
+    pc = new RTCPeerConnection({ iceServers });
 
     // Add all local tracks (video only here).
     localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));

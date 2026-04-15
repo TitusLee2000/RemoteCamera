@@ -8,5 +8,7 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: STUN_SERVER
-        value: stun:stun.l.google.com:19302
+      - key: METERED_API_KEY
+        sync: false
+      - key: METERED_APP_NAME
+        sync: false

@@ -39,6 +39,28 @@ export function createApp() {
     res.json({ status: 'ok', cameras: cameras.size })
   })
 
+  // ICE server credentials — fetched from Metered.ca if API key is set,
+  // otherwise falls back to Google STUN only (works on LAN, not WAN).
+  app.get('/api/ice-servers', async (_req, res) => {
+    const apiKey = process.env.METERED_API_KEY
+    const appName = process.env.METERED_APP_NAME
+    if (apiKey && appName) {
+      try {
+        const url = `https://${appName}.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`
+        const r = await fetch(url)
+        if (r.ok) {
+          const servers = await r.json()
+          return res.json(servers)
+        }
+        console.warn('[ice] Metered fetch failed, status', r.status)
+      } catch (err) {
+        console.warn('[ice] Metered fetch error:', err?.message)
+      }
+    }
+    // Fallback: STUN only
+    res.json([{ urls: 'stun:stun.l.google.com:19302' }])
+  })
+
   const httpServer = createServer(app)
   const wss = new WebSocketServer({ server: httpServer })
 
