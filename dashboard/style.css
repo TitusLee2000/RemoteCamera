@@ -475,9 +475,51 @@ code {
   color: #fbbf24;
   border: 1px solid rgba(250, 204, 21, 0.3);
   white-space: nowrap;
+  user-select: none;
 }
 
 .dimmed-badge[hidden] { display: none; }
+
+.dimmed-badge[data-interactive="true"] {
+  cursor: pointer;
+}
+.dimmed-badge[data-interactive="true"]:hover {
+  background: rgba(250, 204, 21, 0.28);
+}
+
+/* ===== Collapse button ===== */
+.collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--duration) var(--ease),
+              color var(--duration) var(--ease);
+}
+.collapse-btn:hover { background: var(--bg-elev-2); color: var(--text); }
+
+.collapse-icon {
+  transition: transform 0.2s ease;
+}
+
+/* Rotate chevron when collapsed */
+.camera-card[data-collapsed="true"] .collapse-icon {
+  transform: rotate(180deg);
+}
+
+/* Hide body and footer when collapsed */
+.camera-card[data-collapsed="true"] .video-wrap,
+.camera-card[data-collapsed="true"] .camera-card-foot {
+  display: none;
+}
 
 /* ===== Fullscreen video ===== */
 video:fullscreen,

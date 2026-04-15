@@ -138,10 +138,6 @@ function handleCameraList(camList) {
     if (!cameras[camId]) {
       cameras[camId] = { status: 'idle', pc: null, dimmed: locked };
       renderCard(camId);
-    } else if (cameras[camId].status === 'offline') {
-      cameras[camId].status = 'idle';
-      cameras[camId].dimmed = locked;
-      updateCardStatus(camId, 'idle');
     }
     updateDimState(camId, locked);
   });
@@ -169,17 +165,12 @@ function markOffline(camId) {
     try { cam.pc.close(); } catch (e) {}
     cam.pc = null;
   }
-  cam.status = 'offline';
-  updateCardStatus(camId, 'offline');
-
-  // Detach the video stream
+  // Remove the card entirely — camId changes on every phone page reload
+  // so keeping a stale offline card just clutters the dashboard.
+  delete cameras[camId];
   const card = getCardEl(camId);
-  if (card) {
-    const video = card.querySelector('video');
-    if (video) {
-      try { video.srcObject = null; } catch {}
-    }
-  }
+  if (card) card.remove();
+  refreshEmptyState();
 }
 
 // ============================================================
@@ -283,11 +274,29 @@ function updateDimState(camId, locked) {
   if (!card) return;
   const dimmedBadge = card.querySelector('.dimmed-badge');
   const dimBtn = card.querySelector('.dim-btn');
-  if (dimmedBadge) dimmedBadge.hidden = !locked;
+  const isCollapsed = card.dataset.collapsed === 'true';
+
+  if (dimmedBadge) {
+    // In collapsed mode the badge is always shown and acts as the dim toggle
+    dimmedBadge.hidden = isCollapsed ? false : !locked;
+    dimmedBadge.textContent = locked ? 'Dimmed' : (isCollapsed ? 'Dim' : 'Dimmed');
+    dimmedBadge.dataset.locked = locked ? 'true' : 'false';
+    dimmedBadge.dataset.interactive = isCollapsed ? 'true' : 'false';
+  }
   if (dimBtn) {
     dimBtn.textContent = locked ? 'Undim' : 'Dim';
     dimBtn.dataset.locked = locked ? 'true' : 'false';
   }
+}
+
+function toggleCollapse(card, camId) {
+  const collapsed = card.dataset.collapsed === 'true';
+  card.dataset.collapsed = collapsed ? 'false' : 'true';
+  const collapseBtn = card.querySelector('.collapse-btn');
+  collapseBtn.setAttribute('aria-label', collapsed ? 'Collapse camera card' : 'Expand camera card');
+  // Sync dim badge interactive state with new collapsed state
+  const cam = cameras[camId];
+  if (cam) updateDimState(camId, cam.dimmed ?? false);
 }
 
 // ============================================================
@@ -367,6 +376,17 @@ function renderCard(camId) {
     const locked = dimBtn.dataset.locked !== 'true';
     remoteDim(camId, locked);
   });
+
+  const dimmedBadge = node.querySelector('.dimmed-badge');
+  dimmedBadge.addEventListener('click', () => {
+    if (node.dataset.collapsed === 'true') {
+      const locked = dimmedBadge.dataset.locked !== 'true';
+      remoteDim(camId, locked);
+    }
+  });
+
+  const collapseBtn = node.querySelector('.collapse-btn');
+  collapseBtn.addEventListener('click', () => toggleCollapse(node, camId));
 
   const fsBtn = node.querySelector('.fullscreen-btn');
   const video = node.querySelector('video');
