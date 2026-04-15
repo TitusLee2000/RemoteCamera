@@ -7,8 +7,14 @@
 // Override by setting window.SERVER_URL_OVERRIDE before this script loads.
 const SERVER_URL = window.SERVER_URL_OVERRIDE ??
   `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
-// Public Google STUN server for NAT traversal on local networks
-const STUN_SERVER = 'stun:stun.l.google.com:19302';
+// ICE servers for WebRTC NAT traversal.
+// STUN: discovers public IP. TURN: relays media when direct connection fails (required for WAN).
+const ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'turn:openrelay.metered.ca:80',  username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+];
 
 // ----- State -----
 // camId -> { status: 'idle'|'connecting'|'live'|'offline'|'error', pc: RTCPeerConnection|null, dimmed: boolean }
@@ -209,7 +215,7 @@ async function handleOffer(offer, camId) {
     try { cam.pc.close(); } catch {}
   }
 
-  const pc = new RTCPeerConnection({ iceServers: [{ urls: STUN_SERVER }] });
+  const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
   cam.pc = pc;
 
   pc.onicecandidate = ({ candidate }) => {

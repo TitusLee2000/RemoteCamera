@@ -7,10 +7,14 @@
 const SERVER_URL = window.SERVER_URL_OVERRIDE ??
   `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
 
-// STUN server is used so peers can discover their public IP for NAT traversal.
-// Google's public STUN server works for most home networks. Replace with your
-// own STUN/TURN server if you need to support strict / symmetric NATs.
-const STUN_SERVER = 'stun:stun.l.google.com:19302';
+// ICE servers for WebRTC NAT traversal.
+// STUN: discovers public IP. TURN: relays media when direct connection fails (required for WAN).
+const ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'turn:openrelay.metered.ca:80',  username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+];
 // =========================================================================
 
 // Short random camera ID (e.g. "k3f9a2"). Shown to the user so they can
@@ -171,7 +175,7 @@ function send(obj) {
 async function handleRequestOffer(incomingViewerId) {
   viewerId = incomingViewerId;
   try {
-    pc = new RTCPeerConnection({ iceServers: [{ urls: STUN_SERVER }] });
+    pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
     // Add all local tracks (video only here).
     localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
