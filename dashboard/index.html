@@ -62,10 +62,13 @@
           <span class="cam-id-label">Camera</span>
           <code class="cam-id-value"></code>
         </div>
-        <span class="status-badge" data-status="idle">
-          <span class="status-dot" aria-hidden="true"></span>
-          <span class="status-text">Idle</span>
-        </span>
+        <div class="card-badges">
+          <span class="dimmed-badge" hidden>Dimmed</span>
+          <span class="status-badge" data-status="idle">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span class="status-text">Idle</span>
+          </span>
+        </div>
       </header>
 
       <div class="video-wrap">
@@ -95,6 +98,9 @@
         </button>
         <button type="button" class="btn btn-ghost retry-btn" hidden>
           Retry
+        </button>
+        <button type="button" class="btn btn-ghost dim-btn" aria-label="Dim camera screen" title="Dim Screen" hidden>
+          Dim
         </button>
         <button
           type="button"

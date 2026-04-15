@@ -11,7 +11,7 @@ const SERVER_URL = window.SERVER_URL_OVERRIDE ??
 const STUN_SERVER = 'stun:stun.l.google.com:19302';
 
 // ----- State -----
-// camId -> { status: 'idle'|'connecting'|'live'|'offline'|'error', pc: RTCPeerConnection|null }
+// camId -> { status: 'idle'|'connecting'|'live'|'offline'|'error', pc: RTCPeerConnection|null, dimmed: boolean }
 const cameras = {};
 
 // Stable viewer id for this browser tab
@@ -117,6 +117,10 @@ function handleServerMessage(msg) {
       handleRemoteIce(msg.candidate, msg.camId);
       break;
 
+    case 'lock-state':
+      handleLockState(msg.camId, msg.locked);
+      break;
+
     case 'error':
       console.error('[server error]', msg.message);
       break;
@@ -127,21 +131,24 @@ function handleServerMessage(msg) {
 }
 
 function handleCameraList(camList) {
-  // Add any new cameras
-  camList.forEach((camId) => {
+  // camList is [{ id, locked }]
+  const activeIds = camList.map((c) => c.id);
+
+  camList.forEach(({ id: camId, locked }) => {
     if (!cameras[camId]) {
-      cameras[camId] = { status: 'idle', pc: null };
+      cameras[camId] = { status: 'idle', pc: null, dimmed: locked };
       renderCard(camId);
     } else if (cameras[camId].status === 'offline') {
-      // Camera came back online — reset to idle
       cameras[camId].status = 'idle';
+      cameras[camId].dimmed = locked;
       updateCardStatus(camId, 'idle');
     }
+    updateDimState(camId, locked);
   });
 
   // Mark cameras no longer in the list as offline (don't remove)
   Object.keys(cameras).forEach((camId) => {
-    if (!camList.includes(camId)) {
+    if (!activeIds.includes(camId)) {
       markOffline(camId);
     }
   });
@@ -256,6 +263,34 @@ async function handleRemoteIce(candidate, camId) {
 }
 
 // ============================================================
+// Lock / dim
+// ============================================================
+function handleLockState(camId, locked) {
+  if (!cameras[camId]) return;
+  cameras[camId].dimmed = locked;
+  updateDimState(camId, locked);
+}
+
+function remoteDim(camId, locked) {
+  send({ type: 'remote-lock', camId, locked });
+  // Optimistically update UI — server will confirm via lock-state broadcast
+  if (cameras[camId]) cameras[camId].dimmed = locked;
+  updateDimState(camId, locked);
+}
+
+function updateDimState(camId, locked) {
+  const card = getCardEl(camId);
+  if (!card) return;
+  const dimmedBadge = card.querySelector('.dimmed-badge');
+  const dimBtn = card.querySelector('.dim-btn');
+  if (dimmedBadge) dimmedBadge.hidden = !locked;
+  if (dimBtn) {
+    dimBtn.textContent = locked ? 'Undim' : 'Dim';
+    dimBtn.dataset.locked = locked ? 'true' : 'false';
+  }
+}
+
+// ============================================================
 // User actions
 // ============================================================
 function startView(camId) {
@@ -327,6 +362,12 @@ function renderCard(camId) {
   const retryBtn = node.querySelector('.retry-btn');
   retryBtn.addEventListener('click', () => retryView(camId));
 
+  const dimBtn = node.querySelector('.dim-btn');
+  dimBtn.addEventListener('click', () => {
+    const locked = dimBtn.dataset.locked !== 'true';
+    remoteDim(camId, locked);
+  });
+
   const fsBtn = node.querySelector('.fullscreen-btn');
   const video = node.querySelector('video');
   fsBtn.addEventListener('click', () => toggleFullscreen(video));
@@ -345,6 +386,10 @@ function updateCardStatus(camId, status) {
   // Manage button labels for offline state
   const viewBtn = card.querySelector('.view-btn');
   const retryBtn = card.querySelector('.retry-btn');
+
+  // Hide dim/fullscreen by default; shown only when live
+  card.querySelector('.dim-btn').hidden = true;
+  card.querySelector('.fullscreen-btn').hidden = true;
 
   if (status === 'offline') {
     // Show retry full-width to allow rejoin once camera returns
@@ -370,6 +415,8 @@ function updateCardStatus(camId, status) {
   } else if (status === 'live') {
     viewBtn.hidden = true;
     retryBtn.hidden = true;
+    card.querySelector('.dim-btn').hidden = false;
+    card.querySelector('.fullscreen-btn').hidden = false;
   }
 
   // Reset "View" label when going back to idle from connecting

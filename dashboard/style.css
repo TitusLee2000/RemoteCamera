@@ -453,6 +453,32 @@ code {
   }
 }
 
+/* ===== Card badges wrapper ===== */
+.card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ===== Dimmed badge ===== */
+.dimmed-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(250, 204, 21, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  white-space: nowrap;
+}
+
+.dimmed-badge[hidden] { display: none; }
+
 /* ===== Fullscreen video ===== */
 video:fullscreen,
 video:-webkit-full-screen {

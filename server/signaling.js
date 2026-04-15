@@ -8,6 +8,8 @@ export const cameras = new Map()
 export const viewers = new Map()
 // allClients: every connected WebSocket (cameras + viewers + dashboards before viewer-join)
 export const allClients = new Set()
+// cameraLockStates: camId → boolean (true = dimmed/locked)
+export const cameraLockStates = new Map()
 
 /**
  * Safely send a JSON payload on a WebSocket. Swallow errors —
@@ -28,7 +30,13 @@ function send(ws, payload) {
  * Broadcast the current camera list to every connected viewer.
  */
 export function broadcastCameraList() {
-  const payload = { type: 'camera-list', cameras: Array.from(cameras.keys()) }
+  const payload = {
+    type: 'camera-list',
+    cameras: Array.from(cameras.keys()).map((id) => ({
+      id,
+      locked: cameraLockStates.get(id) ?? false,
+    })),
+  }
   for (const ws of allClients) {
     send(ws, payload)
   }
@@ -55,6 +63,10 @@ export function handleMessage(ws, msg) {
       return handleAnswer(ws, msg)
     case 'ice-candidate':
       return handleIceCandidate(ws, msg)
+    case 'lock-state':
+      return handleLockState(ws, msg)
+    case 'remote-lock':
+      return handleRemoteLock(ws, msg)
     default:
       console.warn(`[signaling] unknown message type: ${msg.type}`)
   }
@@ -167,6 +179,28 @@ function handleIceCandidate(ws, msg) {
   console.warn(`[signaling] ice-candidate target not found: ${targetId}`)
 }
 
+function handleLockState(ws, msg) {
+  const { camId, locked } = msg
+  if (!camId || typeof locked !== 'boolean') return
+  cameraLockStates.set(camId, locked)
+  // Broadcast updated lock state to all connected clients (dashboards)
+  const payload = { type: 'lock-state', camId, locked }
+  for (const client of allClients) {
+    if (client !== ws) send(client, payload)
+  }
+}
+
+function handleRemoteLock(ws, msg) {
+  const { camId, locked } = msg
+  if (!camId || typeof locked !== 'boolean') return
+  const camWs = cameras.get(camId)
+  if (!camWs) {
+    console.warn(`[signaling] remote-lock: camera not found: ${camId}`)
+    return
+  }
+  send(camWs, { type: 'remote-lock', locked })
+}
+
 /**
  * Remove a WebSocket from whichever registry owns it.
  * If a camera disconnects, notify all its subscribed viewers.
@@ -180,6 +214,7 @@ export function cleanup(ws) {
     // (a re-register might have replaced it already).
     if (cameras.get(camId) === ws) {
       cameras.delete(camId)
+      cameraLockStates.delete(camId)
       console.log(`[signaling] camera disconnected: ${camId}`)
 
       // Notify any viewer subscribed to this camera.
@@ -207,4 +242,5 @@ export function _resetState() {
   cameras.clear()
   viewers.clear()
   allClients.clear()
+  cameraLockStates.clear()
 }

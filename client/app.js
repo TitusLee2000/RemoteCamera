@@ -150,6 +150,9 @@ function connectWebSocket() {
       case 'ice-candidate':
         await handleRemoteIce(msg);
         break;
+      case 'remote-lock':
+        if (msg.locked) activateLock(); else deactivateLock();
+        break;
       default:
         console.log('[ws] ignored message type', msg.type);
     }
@@ -303,11 +306,13 @@ document.addEventListener('visibilitychange', () => {
 function activateLock() {
   lockOverlay.hidden = false;
   acquireWakeLock();
+  send({ type: 'lock-state', camId, locked: true });
 }
 
 function deactivateLock() {
   lockOverlay.hidden = true;
   releaseWakeLock();
+  send({ type: 'lock-state', camId, locked: false });
 }
 
 lockBtn.addEventListener('click', activateLock);
