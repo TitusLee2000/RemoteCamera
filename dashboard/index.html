@@ -70,23 +70,23 @@
           <span class="cam-id-label">Camera</span>
           <code class="cam-id-value"></code>
         </div>
-        <div class="card-badges">
-          <span class="motion-badge" hidden>⚡ Motion</span>
-          <label class="dim-toggle" title="Dim camera screen">
-            <span class="dim-toggle-label">Dim</span>
-            <input type="checkbox" class="dim-toggle-input" aria-label="Dim camera screen" />
-          </label>
-          <span class="status-badge" data-status="idle">
-            <span class="status-dot" aria-hidden="true"></span>
-            <span class="status-text">Idle</span>
-          </span>
-          <button type="button" class="collapse-btn" aria-label="Collapse camera card" title="Collapse">
-            <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M18 15l-6-6-6 6"/>
-            </svg>
-          </button>
-        </div>
+        <button type="button" class="collapse-btn" aria-label="Collapse camera card" title="Collapse">
+          <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 15l-6-6-6 6"/>
+          </svg>
+        </button>
       </header>
+      <div class="card-badges">
+        <span class="status-badge" data-status="idle">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span class="status-text">Idle</span>
+        </span>
+        <label class="dim-toggle" title="Dim camera screen">
+          <span class="dim-toggle-label">Dim</span>
+          <input type="checkbox" class="dim-toggle-input" aria-label="Dim camera screen" />
+        </label>
+        <span class="motion-badge" hidden>⚡ Motion</span>
+      </div>
 
       <div class="video-wrap">
         <video
