@@ -161,7 +161,7 @@ function handleCameraList(camList) {
 
   camList.forEach(({ id: camId, locked }) => {
     if (!cameras[camId]) {
-      cameras[camId] = { status: 'idle', pc: null, dimmed: locked, removeTimer: null, motionTimer: null };
+      cameras[camId] = { status: 'idle', pc: null, dimmed: locked, removeTimer: null, motionTimer: null, sensitivity: 20 };
       renderCard(camId);
     } else {
       // Cancel pending removal if camera came back within the grace period
@@ -387,21 +387,8 @@ function remoteDim(camId, locked) {
 function updateDimState(camId, locked) {
   const card = getCardEl(camId);
   if (!card) return;
-  const dimmedBadge = card.querySelector('.dimmed-badge');
-  const dimBtn = card.querySelector('.dim-btn');
-  const isCollapsed = card.dataset.collapsed === 'true';
-
-  if (dimmedBadge) {
-    // In collapsed mode the badge is always shown and acts as the dim toggle
-    dimmedBadge.hidden = isCollapsed ? false : !locked;
-    dimmedBadge.textContent = locked ? 'Dimmed' : (isCollapsed ? 'Dim' : 'Dimmed');
-    dimmedBadge.dataset.locked = locked ? 'true' : 'false';
-    dimmedBadge.dataset.interactive = isCollapsed ? 'true' : 'false';
-  }
-  if (dimBtn) {
-    dimBtn.textContent = locked ? 'Undim' : 'Dim';
-    dimBtn.dataset.locked = locked ? 'true' : 'false';
-  }
+  const toggle = card.querySelector('.dim-toggle-input');
+  if (toggle) toggle.checked = locked;
 }
 
 function toggleCollapse(card, camId) {
@@ -409,9 +396,6 @@ function toggleCollapse(card, camId) {
   card.dataset.collapsed = collapsed ? 'false' : 'true';
   const collapseBtn = card.querySelector('.collapse-btn');
   collapseBtn.setAttribute('aria-label', collapsed ? 'Collapse camera card' : 'Expand camera card');
-  // Sync dim badge interactive state with new collapsed state
-  const cam = cameras[camId];
-  if (cam) updateDimState(camId, cam.dimmed ?? false);
 }
 
 // ============================================================
@@ -486,18 +470,18 @@ function renderCard(camId) {
   const retryBtn = node.querySelector('.retry-btn');
   retryBtn.addEventListener('click', () => retryView(camId));
 
-  const dimBtn = node.querySelector('.dim-btn');
-  dimBtn.addEventListener('click', () => {
-    const locked = dimBtn.dataset.locked !== 'true';
-    remoteDim(camId, locked);
+  const dimToggle = node.querySelector('.dim-toggle-input');
+  dimToggle.addEventListener('change', () => {
+    remoteDim(camId, dimToggle.checked);
   });
 
-  const dimmedBadge = node.querySelector('.dimmed-badge');
-  dimmedBadge.addEventListener('click', () => {
-    if (node.dataset.collapsed === 'true') {
-      const locked = dimmedBadge.dataset.locked !== 'true';
-      remoteDim(camId, locked);
-    }
+  const sensitivitySlider = node.querySelector('.sensitivity-slider');
+  const sensitivityVal = node.querySelector('.sensitivity-val');
+  sensitivitySlider.addEventListener('input', () => {
+    const val = Number(sensitivitySlider.value);
+    sensitivityVal.textContent = val;
+    if (cameras[camId]) cameras[camId].sensitivity = val;
+    send({ type: 'set-sensitivity', camId, sensitivity: val });
   });
 
   const collapseBtn = node.querySelector('.collapse-btn');
@@ -522,17 +506,15 @@ function updateCardStatus(camId, status) {
   const viewBtn = card.querySelector('.view-btn');
   const retryBtn = card.querySelector('.retry-btn');
 
-  // Hide dim/fullscreen by default; shown only when live
-  card.querySelector('.dim-btn').hidden = true;
+  // fullscreen only shown when live
   card.querySelector('.fullscreen-btn').hidden = true;
 
   if (status === 'offline') {
-    // Show retry full-width to allow rejoin once camera returns
     viewBtn.hidden = true;
     retryBtn.hidden = false;
     retryBtn.textContent = 'Reconnect';
     retryBtn.style.flex = '1';
-    retryBtn.disabled = true; // can't reconnect until camera-list says so
+    retryBtn.disabled = true;
   } else if (status === 'error') {
     viewBtn.hidden = true;
     retryBtn.hidden = false;
@@ -550,7 +532,6 @@ function updateCardStatus(camId, status) {
   } else if (status === 'live') {
     viewBtn.hidden = true;
     retryBtn.hidden = true;
-    card.querySelector('.dim-btn').hidden = false;
     card.querySelector('.fullscreen-btn').hidden = false;
   }
 

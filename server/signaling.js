@@ -69,6 +69,8 @@ export function handleMessage(ws, msg) {
       return handleRemoteLock(ws, msg)
     case 'motion':
       return handleMotion(ws, msg)
+    case 'set-sensitivity':
+      return handleSetSensitivity(ws, msg)
     default:
       console.warn(`[signaling] unknown message type: ${msg.type}`)
   }
@@ -196,6 +198,14 @@ function handleLockState(ws, msg) {
   for (const client of allClients) {
     if (client !== ws) send(client, payload)
   }
+}
+
+function handleSetSensitivity(ws, msg) {
+  const { camId, sensitivity } = msg
+  if (!camId || typeof sensitivity !== 'number') return
+  const camWs = cameras.get(camId)
+  if (!camWs) return
+  send(camWs, { type: 'set-sensitivity', sensitivity })
 }
 
 function handleMotion(ws, msg) {

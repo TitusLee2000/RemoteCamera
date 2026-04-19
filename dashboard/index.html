@@ -72,7 +72,10 @@
         </div>
         <div class="card-badges">
           <span class="motion-badge" hidden>⚡ Motion</span>
-          <span class="dimmed-badge" hidden>Dimmed</span>
+          <label class="dim-toggle" title="Dim camera screen">
+            <span class="dim-toggle-label">Dim</span>
+            <input type="checkbox" class="dim-toggle-input" aria-label="Dim camera screen" />
+          </label>
           <span class="status-badge" data-status="idle">
             <span class="status-dot" aria-hidden="true"></span>
             <span class="status-text">Idle</span>
@@ -106,15 +109,20 @@
         </div>
       </div>
 
+      <div class="sensitivity-section">
+        <div class="sensitivity-row">
+          <label class="sensitivity-label">Motion Sensitivity</label>
+          <span class="sensitivity-val">20</span>
+        </div>
+        <input type="range" class="sensitivity-slider" min="0" max="100" value="20" />
+      </div>
+
       <footer class="camera-card-foot">
         <button type="button" class="btn btn-primary view-btn">
           View
         </button>
         <button type="button" class="btn btn-ghost retry-btn" hidden>
           Retry
-        </button>
-        <button type="button" class="btn btn-ghost dim-btn" aria-label="Dim camera screen" title="Dim Screen" hidden>
-          Dim
         </button>
         <button
           type="button"

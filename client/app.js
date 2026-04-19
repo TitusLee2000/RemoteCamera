@@ -170,6 +170,13 @@ function connectWebSocket() {
       case 'remote-lock':
         if (msg.locked) activateLock(); else deactivateLock();
         break;
+      case 'set-sensitivity':
+        if (typeof msg.sensitivity === 'number') {
+          motionSensitivity = msg.sensitivity;
+          sensitivitySlider.value = motionSensitivity;
+          sensitivityValue.textContent = motionSensitivity;
+        }
+        break;
       default:
         console.log('[ws] ignored message type', msg.type);
     }
