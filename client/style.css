@@ -217,6 +217,71 @@ button {
   color: #e2e8f0;
 }
 
+/* Motion detection controls */
+.motion-controls {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.motion-controls[hidden] {
+  display: none;
+}
+
+.motion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.motion-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: #94a3b8;
+}
+
+.motion-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #38bdf8;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  min-width: 28px;
+  text-align: right;
+}
+
+.motion-slider {
+  width: 100%;
+  accent-color: #38bdf8;
+  cursor: pointer;
+  height: 6px;
+}
+
+.motion-indicator {
+  background: #fbbf24;
+  color: #1c1917;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  letter-spacing: 0.5px;
+  animation: motion-flash 0.3s ease;
+}
+
+.motion-indicator[hidden] {
+  display: none;
+}
+
+@keyframes motion-flash {
+  0%   { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 /* Lock screen button */
 .lock-btn {
   background: #1e293b;

@@ -67,6 +67,8 @@ export function handleMessage(ws, msg) {
       return handleLockState(ws, msg)
     case 'remote-lock':
       return handleRemoteLock(ws, msg)
+    case 'motion':
+      return handleMotion(ws, msg)
     default:
       console.warn(`[signaling] unknown message type: ${msg.type}`)
   }
@@ -191,6 +193,15 @@ function handleLockState(ws, msg) {
   cameraLockStates.set(camId, locked)
   // Broadcast updated lock state to all connected clients (dashboards)
   const payload = { type: 'lock-state', camId, locked }
+  for (const client of allClients) {
+    if (client !== ws) send(client, payload)
+  }
+}
+
+function handleMotion(ws, msg) {
+  const { camId, timestamp } = msg
+  if (!camId || typeof timestamp !== 'number') return
+  const payload = { type: 'motion', camId, timestamp }
   for (const client of allClients) {
     if (client !== ws) send(client, payload)
   }

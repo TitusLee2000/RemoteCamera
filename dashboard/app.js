@@ -20,8 +20,11 @@ async function getIceServers() {
 }
 
 // ----- State -----
-// camId -> { status: 'idle'|'connecting'|'live'|'offline'|'error', pc: RTCPeerConnection|null, dimmed: boolean }
+// camId -> { status: 'idle'|'connecting'|'live'|'offline'|'error', pc: RTCPeerConnection|null, dimmed: boolean, motionTimer: null }
 const cameras = {};
+const motionEvents = []; // { camId, timestamp } — last 100 events
+const MOTION_ALERT_DURATION_MS = 5000;
+const MAX_LOG_ENTRIES = 100;
 
 // Stable viewer id for this browser tab
 const viewerId = 'viewer-' + Math.random().toString(36).slice(2, 10);
@@ -38,6 +41,15 @@ const errorBanner = document.getElementById('error-banner');
 const connIndicator = document.getElementById('conn-indicator');
 const connText = connIndicator.querySelector('.conn-text');
 const cameraCount = document.getElementById('camera-count');
+const motionLogSection = document.getElementById('motion-log-section');
+const motionLogEl = document.getElementById('motion-log');
+const clearLogBtn = document.getElementById('clear-log-btn');
+
+clearLogBtn.addEventListener('click', () => {
+  motionEvents.length = 0;
+  motionLogEl.innerHTML = '';
+  motionLogSection.hidden = true;
+});
 
 // ============================================================
 // WebSocket lifecycle
@@ -126,6 +138,10 @@ function handleServerMessage(msg) {
       handleRemoteIce(msg.candidate, msg.camId);
       break;
 
+    case 'motion':
+      handleMotion(msg.camId, msg.timestamp);
+      break;
+
     case 'lock-state':
       handleLockState(msg.camId, msg.locked);
       break;
@@ -145,7 +161,7 @@ function handleCameraList(camList) {
 
   camList.forEach(({ id: camId, locked }) => {
     if (!cameras[camId]) {
-      cameras[camId] = { status: 'idle', pc: null, dimmed: locked, removeTimer: null };
+      cameras[camId] = { status: 'idle', pc: null, dimmed: locked, removeTimer: null, motionTimer: null };
       renderCard(camId);
     } else {
       // Cancel pending removal if camera came back within the grace period
@@ -290,6 +306,66 @@ async function handleRemoteIce(candidate, camId) {
   } catch (err) {
     console.warn('addIceCandidate failed', err);
   }
+}
+
+// ============================================================
+// Motion alerts + event log
+// ============================================================
+function handleMotion(camId, timestamp) {
+  if (!cameras[camId]) return;
+
+  // Visual alert — flash motion badge on card
+  const card = getCardEl(camId);
+  if (card) {
+    const badge = card.querySelector('.motion-badge');
+    if (badge) {
+      badge.hidden = false;
+      clearTimeout(cameras[camId].motionTimer);
+      cameras[camId].motionTimer = setTimeout(() => {
+        badge.hidden = true;
+      }, MOTION_ALERT_DURATION_MS);
+    }
+    card.classList.add('motion-alert');
+    setTimeout(() => card.classList.remove('motion-alert'), 600);
+  }
+
+  // Sound alert
+  playMotionBeep();
+
+  // Log entry
+  const entry = { camId, timestamp };
+  motionEvents.unshift(entry);
+  if (motionEvents.length > MAX_LOG_ENTRIES) motionEvents.pop();
+  prependLogEntry(entry);
+  motionLogSection.hidden = false;
+}
+
+function prependLogEntry({ camId, timestamp }) {
+  const li = document.createElement('li');
+  li.className = 'motion-log-entry';
+  const time = new Date(timestamp).toLocaleTimeString();
+  li.innerHTML = `<span class="log-time">${time}</span><span class="log-cam">Camera <code>${camId}</code></span>`;
+  motionLogEl.prepend(li);
+  // Trim rendered list to MAX_LOG_ENTRIES
+  while (motionLogEl.children.length > MAX_LOG_ENTRIES) {
+    motionLogEl.lastChild.remove();
+  }
+}
+
+let audioCtx = null;
+function playMotionBeep() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.25);
+  } catch (e) {}
 }
 
 // ============================================================

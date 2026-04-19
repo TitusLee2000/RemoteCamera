@@ -10,7 +10,12 @@
       "Bash(node --check signaling.js)",
       "Bash(npm test:*)",
       "Bash(npm install:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(task-master parse-prd *)",
+      "Bash(task-master list *)",
+      "Bash(task-master add-task *)",
+      "Bash(node -e ' *)",
+      "Bash(task-master set-status *)"
     ]
   }
 }

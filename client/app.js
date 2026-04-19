@@ -41,6 +41,10 @@ const lockBtn = document.getElementById('lockBtn');
 const lockOverlay = document.getElementById('lockOverlay');
 const statusEl = document.getElementById('status');
 const errorBox = document.getElementById('errorBox');
+const motionControls = document.getElementById('motionControls');
+const sensitivitySlider = document.getElementById('sensitivitySlider');
+const sensitivityValue = document.getElementById('sensitivityValue');
+const motionIndicator = document.getElementById('motionIndicator');
 
 camIdDisplay.textContent = camId;
 
@@ -101,12 +105,18 @@ startBtn.addEventListener('click', async () => {
   // Safari sometimes refuses autoplay even on muted; nudge it.
   try { await previewVideo.play(); } catch (_) { /* ignored */ }
 
+  // Start motion detection once the video has metadata (dimensions known).
+  previewVideo.addEventListener('loadedmetadata', startMotionDetection, { once: true });
+  // If metadata is already available (e.g. replay), start immediately.
+  if (previewVideo.readyState >= 1) startMotionDetection();
+
   // 2) Open WebSocket and register.
   connectWebSocket();
 
   startBtn.hidden = true;
   stopBtn.hidden = false;
   lockBtn.hidden = false;
+  motionControls.hidden = false;
 });
 
 stopBtn.addEventListener('click', () => {
@@ -277,6 +287,8 @@ function teardown(finalState) {
     localStream = null;
   }
 
+  stopMotionDetection();
+
   previewVideo.srcObject = null;
   placeholder.hidden = false;
 
@@ -284,6 +296,8 @@ function teardown(finalState) {
   startBtn.disabled = false;
   stopBtn.hidden = true;
   lockBtn.hidden = true;
+  motionControls.hidden = true;
+  motionIndicator.hidden = true;
   deactivateLock();
 
   if (finalState) setStatus(finalState);
@@ -291,6 +305,87 @@ function teardown(finalState) {
 
 // Clean up when the page is closed.
 window.addEventListener('pagehide', () => teardown());
+
+// ---------- Motion Detection ----------
+const MOTION_W = 160;
+const MOTION_H = 90;
+const PIXEL_DELTA_THRESHOLD = 30;   // per-channel difference to count as changed
+const MOTION_INTERVAL_MS = 200;
+const MOTION_COOLDOWN_MS = 2000;
+
+let motionCanvas = null;
+let motionCtx = null;
+let motionPrevData = null;
+let motionInterval = null;
+let motionCooldown = false;
+let motionSensitivity = 20;
+
+sensitivitySlider.addEventListener('input', () => {
+  motionSensitivity = Number(sensitivitySlider.value);
+  sensitivityValue.textContent = motionSensitivity;
+});
+
+function onMotionDetected(cameraId, timestamp) {
+  send({ type: 'motion', camId: cameraId, timestamp });
+}
+
+function startMotionDetection() {
+  if (motionInterval) return;
+  motionCanvas = document.createElement('canvas');
+  motionCanvas.width = MOTION_W;
+  motionCanvas.height = MOTION_H;
+  motionCtx = motionCanvas.getContext('2d', { willReadFrequently: true });
+  motionPrevData = null;
+
+  motionInterval = setInterval(() => {
+    if (!localStream || previewVideo.readyState < 2) return;
+    motionCtx.drawImage(previewVideo, 0, 0, MOTION_W, MOTION_H);
+    const frame = motionCtx.getImageData(0, 0, MOTION_W, MOTION_H);
+
+    if (motionPrevData) {
+      const changed = countChangedPixels(frame.data, motionPrevData);
+      const changedPct = (changed / (MOTION_W * MOTION_H)) * 100;
+      // sensitivity 0 → threshold 5% (hard to trigger)
+      // sensitivity 100 → threshold 0.1% (very easy to trigger)
+      const threshold = Math.max(0.1, (100 - motionSensitivity) * 0.05);
+
+      if (changedPct > threshold && !motionCooldown) {
+        motionCooldown = true;
+        setTimeout(() => { motionCooldown = false; }, MOTION_COOLDOWN_MS);
+        flashMotionIndicator();
+        onMotionDetected(camId, Date.now());
+      }
+    }
+
+    motionPrevData = frame.data.slice();
+  }, MOTION_INTERVAL_MS);
+}
+
+function countChangedPixels(curr, prev) {
+  let count = 0;
+  for (let i = 0; i < curr.length; i += 4) {
+    if (
+      Math.abs(curr[i]   - prev[i])   > PIXEL_DELTA_THRESHOLD ||
+      Math.abs(curr[i+1] - prev[i+1]) > PIXEL_DELTA_THRESHOLD ||
+      Math.abs(curr[i+2] - prev[i+2]) > PIXEL_DELTA_THRESHOLD
+    ) count++;
+  }
+  return count;
+}
+
+function stopMotionDetection() {
+  clearInterval(motionInterval);
+  motionInterval = null;
+  motionPrevData = null;
+  motionCanvas = null;
+  motionCtx = null;
+  motionCooldown = false;
+}
+
+function flashMotionIndicator() {
+  motionIndicator.hidden = false;
+  setTimeout(() => { motionIndicator.hidden = true; }, 1500);
+}
 
 // ---------- Lock screen ----------
 let wakeLock = null;

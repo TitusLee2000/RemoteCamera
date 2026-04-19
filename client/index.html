@@ -33,6 +33,15 @@
       <button id="lockBtn" class="lock-btn" type="button" hidden>Lock Screen</button>
     </section>
 
+    <section class="motion-controls" id="motionControls" hidden>
+      <div class="motion-header">
+        <label for="sensitivitySlider" class="motion-label">Motion Sensitivity</label>
+        <span class="motion-value" id="sensitivityValue">20</span>
+      </div>
+      <input type="range" id="sensitivitySlider" class="motion-slider" min="0" max="100" value="20" />
+      <div class="motion-indicator" id="motionIndicator" hidden>⚡ Motion Detected</div>
+    </section>
+
     <!-- Dim overlay — shown when lock is active -->
     <div id="lockOverlay" class="lock-overlay" hidden>
       <button id="lockClose" class="lock-close" type="button" aria-label="Unlock">✕</button>

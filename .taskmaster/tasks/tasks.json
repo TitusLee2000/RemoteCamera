@@ -2,143 +2,311 @@
   "master": {
     "tasks": [
       {
-        "id": 1,
+        "id": "1",
         "title": "Project initialization and dependency setup",
         "description": "Initialize Node.js project, install dependencies, and set up project structure",
         "details": "1. Initialize package.json with `npm init`\n2. Install server dependencies: express, ws (WebSocket), cors\n3. Install dev dependencies: nodemon\n4. Create folder structure:\n   - /server (Node.js backend)\n   - /public/phone (Phone client HTML/JS)\n   - /public/dashboard (Dashboard HTML/JS or React)\n5. Create .gitignore for node_modules, .env\n6. Set up npm scripts: 'start', 'dev'\n7. Create basic server/index.js entry point\n8. Configure Express to serve static files from /public",
         "testStrategy": "Verify package.json exists with correct dependencies, run `npm install` successfully, start server with `npm run dev` and confirm it runs without errors on specified port (e.g., 3000)",
         "priority": "high",
         "dependencies": [],
-        "status": "pending",
+        "status": "cancelled",
         "subtasks": []
       },
       {
-        "id": 2,
+        "id": "2",
         "title": "Implement WebSocket signaling server",
         "description": "Build WebSocket server for real-time signaling between phones and dashboard",
         "details": "1. Create server/websocket.js module\n2. Initialize WebSocket server using 'ws' package attached to HTTP server\n3. Implement message handling for:\n   - 'register-camera': assign unique camera ID, store camera metadata (timestamp, connection)\n   - 'offer': relay WebRTC offer from phone to dashboard\n   - 'answer': relay WebRTC answer from dashboard to phone\n   - 'ice-candidate': relay ICE candidates bidirectionally\n   - 'disconnect': clean up camera from active list\n4. Maintain in-memory Map of active cameras: {cameraId: {ws, timestamp, name}}\n5. Broadcast camera list updates to all dashboard clients when cameras connect/disconnect\n6. Implement heartbeat/ping-pong to detect dead connections\n7. Handle WebSocket errors and cleanup",
         "testStrategy": "Use WebSocket test client (wscat or browser console) to connect, send register-camera message, verify unique ID assignment. Test multiple connections and verify camera list broadcasts. Test disconnect and verify cleanup.",
         "priority": "high",
         "dependencies": [
-          1
+          "1"
         ],
-        "status": "pending",
+        "status": "cancelled",
         "subtasks": []
       },
       {
-        "id": 3,
+        "id": "3",
         "title": "Create REST API for camera management",
         "description": "Build Express REST endpoints to list cameras and retrieve stream metadata",
         "details": "1. Create server/routes/cameras.js\n2. Implement GET /api/cameras - returns JSON array of active cameras [{id, name, status, connectedAt}]\n3. Implement GET /api/cameras/:id - returns single camera details\n4. Wire routes into main Express app\n5. Add CORS middleware for local network access\n6. Return proper HTTP status codes (200, 404, 500)\n7. Use the same in-memory camera Map from WebSocket server",
         "testStrategy": "Test endpoints with curl or Postman: GET /api/cameras returns empty array initially, register camera via WebSocket, verify GET /api/cameras returns the camera, test GET /api/cameras/:id with valid and invalid IDs",
         "priority": "medium",
         "dependencies": [
-          1,
-          2
+          "1",
+          "2"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "cancelled",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T00:46:10.163Z"
       },
       {
-        "id": 4,
+        "id": "4",
         "title": "Build phone client web interface",
         "description": "Create vanilla JS web page that captures camera stream and establishes WebRTC connection",
         "details": "1. Create public/phone/index.html with minimal UI:\n   - Camera selection dropdown (front/back)\n   - Connection status indicator\n   - Video preview element (optional)\n2. Create public/phone/app.js:\n   - Use navigator.mediaDevices.getUserMedia({video: {facingMode: 'user'}, audio: false})\n   - Implement camera switching (facingMode: 'user' vs 'environment')\n   - Create RTCPeerConnection with STUN servers (e.g., stun:stun.l.google.com:19302)\n   - Connect to WebSocket server at ws://[SERVER_IP]:3000\n   - Send 'register-camera' message on connection\n   - Handle incoming 'answer' and 'ice-candidate' messages from dashboard\n   - Create and send WebRTC offer with local stream\n   - Display connection status (connecting, connected, disconnected)\n3. Add basic CSS for mobile-friendly layout\n4. Handle errors (camera permission denied, connection failed)",
         "testStrategy": "Open phone client on mobile browser, grant camera permissions, verify video preview appears, check WebSocket connection in browser DevTools, verify camera registration message sent to server",
         "priority": "high",
         "dependencies": [
-          1,
-          2
+          "1",
+          "2"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "cancelled",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T00:46:42.620Z"
       },
       {
-        "id": 5,
+        "id": "5",
         "title": "Build dashboard web interface structure",
         "description": "Create dashboard HTML/JS foundation with camera grid layout",
         "details": "Decision point: Use React (Vite) OR Vanilla JS based on preference\n\nVanilla JS approach:\n1. Create public/dashboard/index.html with:\n   - Grid container for camera feeds\n   - Auto-refresh toggle\n2. Create public/dashboard/app.js:\n   - Fetch camera list from GET /api/cameras on load\n   - Dynamically create grid items for each camera\n   - Each grid item: <video> element + camera name + status badge\n   - Auto-refresh every 5 seconds to detect new/disconnected cameras\n   - WebSocket connection to receive real-time camera list updates\n3. Create public/dashboard/styles.css:\n   - CSS Grid layout (responsive: 1 col mobile, 2 cols tablet, 3-4 cols desktop)\n   - Status badge styles (online=green, offline=gray)\n4. Handle empty state (no cameras connected)",
         "testStrategy": "Open dashboard in browser, verify grid layout renders, check GET /api/cameras is called on load, manually connect phone client and verify dashboard updates to show new camera",
         "priority": "high",
         "dependencies": [
-          1,
-          3
+          "1",
+          "3"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "cancelled",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T00:47:09.252Z"
       },
       {
-        "id": 6,
+        "id": "6",
         "title": "Implement WebRTC peer connection in dashboard",
         "description": "Add WebRTC client code to dashboard to receive and display camera streams",
         "details": "1. In public/dashboard/app.js, create RTCPeerConnection for each camera\n2. Use same STUN servers as phone client\n3. WebSocket message handlers:\n   - On 'offer' from phone: create RTCPeerConnection, setRemoteDescription(offer), create answer, send 'answer' back\n   - On 'ice-candidate': addIceCandidate to appropriate peer connection\n4. On 'track' event: attach remote stream to corresponding <video> element using video.srcObject = event.streams[0]\n5. Store peer connections in Map: {cameraId: RTCPeerConnection}\n6. Clean up peer connections when cameras disconnect\n7. Auto-play videos when stream available (video.autoplay = true, video.playsInline = true)\n8. Handle connection state changes (connecting, connected, failed, disconnected)",
         "testStrategy": "Connect phone client, verify dashboard receives WebRTC offer via WebSocket, verify answer is sent back, check browser DevTools for ICE candidate exchange, confirm video stream appears in dashboard <video> element, verify multiple cameras can stream simultaneously",
         "priority": "high",
         "dependencies": [
-          4,
-          5
+          "4",
+          "5"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "cancelled",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T00:47:32.280Z"
       },
       {
-        "id": 7,
+        "id": "7",
         "title": "Add fullscreen mode for camera feeds",
         "description": "Implement click-to-fullscreen functionality for individual camera feeds",
         "details": "1. Add click event listener to each video element in dashboard\n2. Use Fullscreen API:\n   - video.requestFullscreen() or video.webkitRequestFullscreen() for Safari\n   - Handle vendor prefixes (webkit, moz, ms)\n3. Add fullscreen exit on Escape key or clicking exit button\n4. Maintain video stream during fullscreen transition\n5. Add fullscreen icon overlay on video hover\n6. Handle fullscreen errors (not supported, user denied)",
         "testStrategy": "Click on a camera feed in dashboard, verify it enters fullscreen mode, press Escape to exit, test on multiple browsers (Chrome, Safari, Firefox), verify video continues playing during transitions",
         "priority": "medium",
         "dependencies": [
-          6
+          "6"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "cancelled",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T00:47:59.022Z"
       },
       {
-        "id": 8,
+        "id": "8",
         "title": "Implement camera naming and identification",
         "description": "Allow users to assign names to cameras and persist identification",
         "details": "1. Generate unique camera ID on server using uuid or timestamp+random\n2. Store camera name in localStorage on phone client (key: 'remotecamera-name')\n3. Phone client: on first load, prompt for camera name or auto-generate (e.g., 'Camera-XXXX')\n4. Send camera name in 'register-camera' message payload\n5. Server: store camera name in camera Map\n6. Dashboard: display camera name in grid item header\n7. Add inline edit functionality in dashboard to rename cameras\n8. On rename: send WebSocket message to update camera name on server\n9. Server broadcasts name change to all dashboard clients",
         "testStrategy": "Open phone client, set camera name, refresh page and verify name persists, view dashboard and confirm name displays, rename camera from dashboard and verify change reflects immediately across all dashboard instances",
         "priority": "medium",
         "dependencies": [
-          6
+          "6"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "cancelled",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T00:48:18.622Z"
       },
       {
-        "id": 9,
+        "id": "9",
         "title": "Add connection status indicators and error handling",
         "description": "Display real-time connection status and handle network/connection errors gracefully",
         "details": "1. Phone client:\n   - Show status: 'Connecting...', 'Connected', 'Disconnected', 'Error'\n   - Update status based on WebSocket readyState and RTCPeerConnection.connectionState\n   - Display error messages for camera permission denied, WebSocket connection failed, WebRTC connection failed\n   - Add reconnection logic with exponential backoff (max 5 retries)\n2. Dashboard:\n   - Status badge per camera: online (green), offline (gray), error (red)\n   - Update badge based on camera list from server\n   - Show tooltip with last connected timestamp\n   - Gray out/remove video element when camera disconnects\n3. Server:\n   - Log connection events (camera connected, disconnected, errors)\n   - Send connection status in camera list API",
         "testStrategy": "Simulate network interruption (disable WiFi), verify phone client shows 'Disconnected' and attempts reconnection, verify dashboard updates status badge to offline, restore network and confirm automatic reconnection, deny camera permission and verify error message displays",
         "priority": "medium",
         "dependencies": [
-          6,
-          8
+          "6",
+          "8"
         ],
-        "status": "pending",
-        "subtasks": []
+        "status": "cancelled",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T00:48:37.888Z"
       },
       {
-        "id": 10,
+        "id": "10",
         "title": "Create documentation and deployment guide",
         "description": "Write comprehensive README and setup instructions for local network deployment",
         "details": "1. Update README.md with:\n   - Project overview and features\n   - Prerequisites (Node.js version)\n   - Installation steps (git clone, npm install)\n   - Configuration (server IP, port)\n   - Running the server (npm start)\n   - Accessing phone client: http://[SERVER_IP]:3000/phone\n   - Accessing dashboard: http://[SERVER_IP]:3000/dashboard\n   - Troubleshooting (firewall, HTTPS requirements for getUserMedia, camera permissions)\n2. Create .env.example for configuration:\n   - PORT=3000\n   - STUN_SERVER=stun:stun.l.google.com:19302\n3. Document WebRTC limitations:\n   - Requires HTTPS in production (getUserMedia restriction)\n   - localhost exception for development\n   - LAN IP access may require HTTPS with self-signed cert\n4. Add architecture diagram (optional)\n5. Add license information",
         "testStrategy": "Follow README instructions from scratch on a fresh machine/VM, verify all steps work, test phone client and dashboard access from different devices on same network, validate .env.example contains all necessary config",
         "priority": "low",
         "dependencies": [
-          9
+          "9"
         ],
-        "status": "pending",
+        "status": "cancelled",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T00:48:56.676Z"
+      },
+      {
+        "id": "11",
+        "title": "Implement client-side motion detection using canvas pixel-diff",
+        "description": "Add motion detection capability to phone client using canvas-based frame comparison",
+        "details": "1. Create motion-detector.js module in /client\n2. Capture video frames to canvas at ~10 fps using requestAnimationFrame\n3. Implement pixel difference algorithm:\n   - Convert current frame to grayscale\n   - Compare with previous frame pixel-by-pixel\n   - Calculate percentage of changed pixels above threshold\n   - Trigger motion event if percentage exceeds sensitivity threshold\n4. Add configurable sensitivity parameter (0-100, default 15)\n5. Optimize performance:\n   - Use downscaled canvas (e.g., 320x240) for comparison\n   - Use Uint32Array for fast pixel access\n   - Skip pixels (check every 4th pixel) for performance\n6. Export motion events with metadata: timestamp, intensity (% changed)\n7. Add toggle in phone UI to enable/disable motion detection\n8. Store motion detection state in localStorage",
+        "testStrategy": "Enable motion detection in phone client, wave hand in front of camera and verify motion events trigger in console, adjust sensitivity slider and verify threshold changes, test performance impact on old phones (should maintain 30fps stream), verify motion detection can be toggled on/off",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T08:39:04.865Z"
+      },
+      {
+        "id": "12",
+        "title": "Add WebSocket signaling for motion events",
+        "description": "Extend signaling server to relay motion detection events from cameras to dashboard",
+        "details": "1. Add new message type 'motion-detected' in signaling.js\n2. Message payload: { type: 'motion-detected', camId, timestamp, intensity }\n3. In handleMessage(), add case for 'motion-detected'\n4. Relay motion events to all connected viewers/dashboards\n5. No server-side storage needed (real-time only for v3)\n6. Add motion event to camera metadata in cameras Map (lastMotionAt timestamp)\n7. Include lastMotionAt in camera-list broadcasts\n8. Update /api/ice-servers to remain unchanged (TURN already implemented in v2)\n9. Test message routing with console.log on server side",
+        "testStrategy": "Trigger motion event from phone client, verify server receives 'motion-detected' message, verify dashboard receives relayed event via WebSocket, check server logs for proper message routing, test with multiple cameras to ensure events route to correct camera IDs",
+        "priority": "high",
+        "dependencies": [
+          "11"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T08:39:43.889Z"
+      },
+      {
+        "id": "13",
+        "title": "Build dashboard motion alert UI and notification system",
+        "description": "Add visual and audio indicators for motion events in dashboard",
+        "details": "1. Add motion event listener in dashboard app.js\n2. Visual indicators:\n   - Add pulsing red border to camera card when motion detected\n   - Add motion icon badge (⚠️) to card header\n   - Auto-clear alert after 5 seconds of no motion\n3. Audio notification:\n   - Use Web Audio API to play alert tone (440Hz beep, 200ms)\n   - Add mute/unmute toggle in dashboard header\n   - Store mute preference in localStorage\n4. Motion event log:\n   - Create in-memory array to store last 50 events\n   - Display log panel (collapsible) showing: timestamp, camera ID, intensity\n   - Format timestamps using Intl.DateTimeFormat\n   - Add \"Clear Log\" button\n5. Per-camera motion sensitivity config:\n   - Add sensitivity slider in camera card settings\n   - Send 'motion-config' WebSocket message to phone client\n   - Range: 0-100, default 15\n6. Add motion detection toggle switch per camera in dashboard",
+        "testStrategy": "Trigger motion on phone, verify dashboard card shows red border and motion badge, verify audio alert plays (if unmuted), check motion log displays event with correct timestamp and camera ID, adjust sensitivity from dashboard and verify phone client receives config update, mute alerts and verify no sound plays",
+        "priority": "high",
+        "dependencies": [
+          "12"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T08:41:30.157Z"
+      },
+      {
+        "id": "14",
+        "title": "Add motion-config WebSocket message handling",
+        "description": "Enable dashboard to remotely configure motion detection settings on cameras",
+        "details": "1. Add 'motion-config' message type in signaling.js\n2. Message payload: { type: 'motion-config', camId, sensitivity, enabled }\n3. Route message from dashboard to target camera WebSocket\n4. In phone client app.js:\n   - Listen for 'motion-config' messages\n   - Update motion detector sensitivity dynamically\n   - Toggle motion detection on/off without page reload\n   - Store config in localStorage for persistence\n5. Send acknowledgment message back to dashboard\n6. Update camera-list broadcast to include motion detection state",
+        "testStrategy": "Change sensitivity slider in dashboard, verify phone client receives config update, check localStorage on phone to confirm new sensitivity persisted, toggle motion detection off from dashboard and verify phone stops sending motion events, refresh phone page and verify settings persist",
+        "priority": "medium",
+        "dependencies": [
+          "13"
+        ],
+        "status": "done",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T08:41:40.649Z"
+      },
+      {
+        "id": "15",
+        "title": "Implement server-side recording using MediaRecorder API",
+        "description": "Add capability to record camera streams to WebM files on the server",
+        "details": "1. Research approach: client-side MediaRecorder vs server-side recording\n   - Decision: Use CLIENT-SIDE MediaRecorder API (simpler, no server codec dependencies)\n2. Create recording-manager.js in /client:\n   - Use MediaRecorder with same MediaStream from getUserMedia\n   - Record to WebM format (VP8/VP9 video codec)\n   - Split recordings into chunks (every 10 minutes or 100MB)\n   - Store chunks in memory as Blob array\n3. Add recording controls in phone UI:\n   - Start/Stop recording button\n   - Recording indicator (red dot + duration timer)\n   - Display estimated file size\n4. Upload recordings to server:\n   - Use FormData + fetch POST to /api/recordings/upload\n   - Include metadata: camId, startTime, duration, fileSize\n   - Implement chunked upload for large files (>50MB)\n   - Show upload progress bar\n5. Optimize for mobile:\n   - Use videoBitsPerSecond: 1000000 (1Mbps) to balance quality/size\n   - Add battery warning if recording while not charging\n6. Handle errors: out of storage, upload failures",
+        "testStrategy": "Start recording in phone client, verify red dot indicator appears, record for 2 minutes and stop, verify WebM blob created in memory, check file size is reasonable (~15MB for 2min at 1Mbps), trigger upload and verify POST request to server with correct metadata, test with low storage and verify error handling",
+        "priority": "high",
+        "dependencies": [],
+        "status": "cancelled",
         "subtasks": []
+      },
+      {
+        "id": "16",
+        "title": "Build server-side recording storage and API endpoints",
+        "description": "Create REST API to handle recording uploads and metadata storage",
+        "details": "1. Create recordings/ directory in server root for file storage\n2. Add multer middleware for file uploads (npm install multer)\n3. Implement POST /api/recordings/upload:\n   - Accept multipart/form-data with video file + metadata\n   - Generate unique filename: {camId}_{timestamp}.webm\n   - Save file to recordings/ directory\n   - Store metadata in recordings.json (or SQLite for v4.1):\n     {id, camId, filename, startTime, duration, fileSize, uploadedAt}\n   - Return recording ID and download URL\n4. Implement GET /api/recordings:\n   - Return list of all recordings with metadata\n   - Support query params: ?camId=xxx to filter by camera\n   - Sort by startTime descending (newest first)\n5. Implement GET /api/recordings/:id:\n   - Return single recording metadata\n6. Implement DELETE /api/recordings/:id:\n   - Delete file from disk\n   - Remove metadata entry\n7. Add disk space management:\n   - Check available space before accepting upload\n   - Return 507 Insufficient Storage if full\n8. Serve recordings: GET /api/recordings/:id/download (stream video file)",
+        "testStrategy": "Upload recording from phone client, verify file saved in recordings/ directory with correct filename, verify metadata saved in recordings.json, test GET /api/recordings returns the uploaded recording, test DELETE endpoint removes file and metadata, test download endpoint streams video correctly, verify 507 error when disk full (mock with disk space check)",
+        "priority": "high",
+        "dependencies": [
+          "15"
+        ],
+        "status": "cancelled",
+        "subtasks": []
+      },
+      {
+        "id": "17",
+        "title": "Create dashboard playback UI and video player",
+        "description": "Add recording playback interface to dashboard with list and player components",
+        "details": "1. Add \"Recordings\" tab/section to dashboard\n2. Fetch recordings list from GET /api/recordings on load\n3. Display recordings in table/list:\n   - Columns: Camera Name, Date/Time, Duration, File Size, Actions\n   - Format duration as MM:SS using duration metadata\n   - Format fileSize as MB (divide by 1048576)\n   - Sort by date descending (newest first)\n4. Implement filter dropdown to filter by camera ID\n5. Add playback modal/overlay:\n   - Opens when user clicks recording row\n   - <video> element with controls, src=/api/recordings/{id}/download\n   - Display metadata: camera name, recorded time, duration\n   - Playback controls: play, pause, seek, volume, fullscreen\n   - Close button to exit modal\n6. Add delete functionality:\n   - Delete button per recording\n   - Confirmation dialog (\"Delete this recording?\")\n   - Call DELETE /api/recordings/:id\n   - Remove from list on success\n7. Add auto-refresh (every 30s) to show new uploads\n8. Handle empty state (no recordings yet)",
+        "testStrategy": "Upload recording from phone, verify it appears in dashboard recordings list with correct metadata, click recording to open playback modal, verify video plays correctly, test seek/pause/volume controls, delete recording and verify it's removed from list and server, filter by camera and verify only matching recordings shown, test with 0 recordings and verify empty state displays",
+        "priority": "high",
+        "dependencies": [
+          "16"
+        ],
+        "status": "cancelled",
+        "subtasks": []
+      },
+      {
+        "id": "18",
+        "title": "Add remote recording trigger from dashboard",
+        "description": "Enable dashboard to remotely start/stop recording on camera phones",
+        "details": "1. Add 'start-recording' and 'stop-recording' WebSocket message types in signaling.js\n2. Message payloads:\n   - { type: 'start-recording', camId }\n   - { type: 'stop-recording', camId }\n3. Route messages from dashboard to target camera WebSocket\n4. In phone client:\n   - Listen for 'start-recording' and 'stop-recording' messages\n   - Trigger MediaRecorder start/stop programmatically\n   - Update UI to show \"Recording (remote)\" indicator\n   - Send acknowledgment back to dashboard with status\n5. In dashboard:\n   - Add Record button to each camera card\n   - Show recording state: idle, recording, uploading\n   - Disable button while uploading\n   - Display recording duration timer during remote recording\n6. Send recording status updates:\n   - Phone sends 'recording-status' messages every 5s during recording\n   - Payload: { type: 'recording-status', camId, duration, fileSize }\n7. Auto-upload when remote recording stops",
+        "testStrategy": "Click Record button in dashboard camera card, verify phone receives 'start-recording' message, verify phone starts recording and shows indicator, verify dashboard shows recording timer, click Stop in dashboard, verify recording stops and auto-uploads, check dashboard updates to show new recording in list, test with multiple cameras recording simultaneously",
+        "priority": "medium",
+        "dependencies": [
+          "17"
+        ],
+        "status": "cancelled",
+        "subtasks": []
+      },
+      {
+        "id": "19",
+        "title": "Implement motion-triggered recording (v4.1 enhancement)",
+        "description": "Automatically start recording when motion is detected",
+        "details": "1. Add 'motionRecording' config option to motion-config message\n2. In phone client:\n   - When motion detected AND motionRecording enabled:\n     - Auto-start recording if not already recording\n     - Set auto-stop timer (default: 30 seconds after last motion)\n     - Reset timer if motion continues\n     - Stop recording when timer expires\n   - Add visual indicator: \"Recording (motion)\"\n3. In dashboard:\n   - Add \"Record on Motion\" toggle per camera\n   - Send motionRecording config to phone via motion-config message\n   - Display motion-triggered recordings with special badge\n4. Recording metadata:\n   - Add 'trigger' field: 'manual' | 'remote' | 'motion'\n   - Filter recordings by trigger type in dashboard\n5. Add cooldown period:\n   - Prevent recording restart within 10s of previous stop\n   - Avoid spam recordings from false positives\n6. Optimize storage:\n   - Auto-delete motion recordings older than 7 days (configurable)\n   - Keep manual recordings indefinitely",
+        "testStrategy": "Enable \"Record on Motion\" in dashboard, trigger motion on phone, verify recording starts automatically, verify recording stops 30s after motion stops, trigger continuous motion and verify single recording (not multiple), check metadata shows trigger='motion', test cooldown by triggering motion immediately after recording stops (should not start new recording within 10s), wait 8 days and verify old motion recordings auto-deleted",
+        "priority": "medium",
+        "dependencies": [
+          "14",
+          "18"
+        ],
+        "status": "cancelled",
+        "subtasks": []
+      },
+      {
+        "id": "20",
+        "title": "Add recording management and storage optimization",
+        "description": "Implement storage quota management, automatic cleanup, and download/export features",
+        "details": "1. Create storage-manager.js in /server:\n   - Calculate total size of recordings/ directory\n   - Implement disk space monitoring\n   - Set max storage quota (env var: MAX_RECORDING_STORAGE_GB, default 10GB)\n   - Auto-delete oldest recordings when quota exceeded\n2. Add storage stats endpoint GET /api/recordings/stats:\n   - Return: { totalRecordings, totalSizeBytes, usedPercent, oldestRecording, newestRecording }\n3. Dashboard storage UI:\n   - Display storage usage bar (X GB / 10 GB used)\n   - Warning badge when >80% full\n   - Show storage stats in recordings section header\n4. Bulk operations:\n   - Add \"Select All\" checkbox in recordings list\n   - \"Delete Selected\" button with confirmation\n   - Delete multiple recordings in single API call\n5. Export/download feature:\n   - Add download button per recording\n   - Use <a download> or fetch + Blob URL to download\n   - Support batch download (zip multiple recordings)\n6. Automatic cleanup policy:\n   - Delete motion recordings >7 days old (configurable)\n   - Keep manual/remote recordings indefinitely (or 30 days if quota pressure)\n   - Run cleanup job daily at midnight\n7. Add .env configuration:\n   - MAX_RECORDING_STORAGE_GB=10\n   - MOTION_RECORDING_RETENTION_DAYS=7\n   - MANUAL_RECORDING_RETENTION_DAYS=30",
+        "testStrategy": "Upload recordings until >80% quota, verify warning appears in dashboard, verify oldest recordings auto-deleted when quota exceeded, test bulk delete of 5 recordings, verify all deleted, download single recording and verify file plays locally, test GET /api/recordings/stats returns correct size and count, set retention to 1 day and verify cleanup job deletes old motion recordings (use mock date for testing)",
+        "priority": "low",
+        "dependencies": [
+          "17"
+        ],
+        "status": "cancelled",
+        "subtasks": []
+      },
+      {
+        "id": "21",
+        "title": "Implement client-side motion detection using canvas pixel-diff",
+        "description": "Add motion detection capability to phone client using canvas-based frame comparison to detect pixel changes between consecutive video frames captured from getUserMedia stream",
+        "details": "1. Create motion-detector.js module in /client directory:\n   - Export MotionDetector class with start/stop/configure methods\n   - Accept video element and callback function as constructor params\n   \n2. Implement frame capture and comparison logic:\n   - Create offscreen canvas using OffscreenCanvas API (fallback to regular canvas for older browsers)\n   - Use requestAnimationFrame to capture frames at ~10fps (100ms intervals)\n   - Get canvas 2D context and set canvas dimensions to match video stream\n   - Use ctx.drawImage(videoElement, 0, 0, width, height) to capture current frame\n   \n3. Build pixel difference algorithm:\n   - Get pixel data using ctx.getImageData(0, 0, width, height)\n   - For performance, downscale analysis to 160x120 or 320x240 (configurable via downsampleFactor)\n   - Convert pixels to grayscale: gray = 0.299*r + 0.587*g + 0.114*b\n   - Store previous frame's grayscale data in Float32Array or Uint8Array\n   - Compare current vs previous frame pixel-by-pixel\n   - Count pixels where Math.abs(current - previous) > pixelThreshold (default: 25/255)\n   - Calculate motion percentage: (changedPixels / totalPixels) * 100\n   \n4. Motion event triggering:\n   - Fire 'motion' custom event when percentage exceeds sensitivity threshold (default: 15%)\n   - Include metadata in event.detail: { percentage, timestamp, dimensions }\n   - Implement debounce/cooldown to prevent event spam (min 500ms between events)\n   \n5. Add configurable parameters:\n   - sensitivity: 0-100 scale (maps to percentage threshold, default 15)\n   - pixelThreshold: 0-255 per-pixel difference threshold (default 25)\n   - sampleRate: frames per second to analyze (default 10fps)\n   - downsampleFactor: reduction ratio for performance (default 4 = 1/4 resolution)\n   - enabled: boolean to toggle detection on/off\n   \n6. Integrate into client/app.js:\n   - Import MotionDetector after localStream is obtained (line 90-96)\n   - Initialize detector: motionDetector = new MotionDetector(previewVideo, onMotionDetected)\n   - Start detection after stream begins: motionDetector.start()\n   - Handle motion events: function onMotionDetected(detail) { send({ type: 'motion-event', camId, ...detail }) }\n   - Stop detector in teardown() function (line 266)\n   \n7. Optimize performance for mobile devices:\n   - Use requestIdleCallback to defer processing if available\n   - Skip frames if processing falls behind (check timestamp delta)\n   - Release canvas resources properly in stop() method\n   - Verify memory usage doesn't grow over time (potential ImageData leak)\n   \n8. Add visual indicator in client UI:\n   - Add motion indicator dot to index.html (hidden by default)\n   - Flash red dot for 300ms when motion detected\n   - Use CSS animation for smooth fade\n   \n9. Store motion settings in localStorage:\n   - Key: 'remotecamera-motion-config'\n   - Value: JSON.stringify({ enabled, sensitivity })\n   - Load on page init and apply to detector",
+        "testStrategy": "Create /client/motion-detector.js and verify module structure, open phone client in browser DevTools, enable motion detection, wave hand in front of camera and verify motion events appear in console with correct metadata (percentage, timestamp), adjust sensitivity from 5 to 50 and verify threshold changes affect detection (lower = more sensitive), test performance on older phone (iPhone 8 or Android equivalent) and verify stream maintains 30fps during detection, use Chrome Performance profiler to verify no memory leaks over 5 minutes of continuous detection, verify detection can be toggled off and requestAnimationFrame loop stops, trigger motion repeatedly and verify debounce prevents event spam, check localStorage persists settings across page refresh, verify downsampling works by testing at 160x120 vs 320x240 and comparing CPU usage",
+        "status": "cancelled",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": "22",
+        "title": "Server: relay motion detection events from phone client to dashboard viewers",
+        "description": "Implement WebSocket message handling to relay 'motion' events from phone clients to all connected dashboard viewers. Phone sends motion events with cameraId and timestamp; server broadcasts to dashboards in real-time with no persistence.",
+        "details": "1. Add 'motion' message type handler in signaling.js handleMessage() switch statement (after line 69):\n   ```javascript\n   case 'motion':\n     return handleMotionEvent(ws, msg)\n   ```\n\n2. Implement handleMotionEvent() function in signaling.js (after handleRemoteLock around line 208):\n   ```javascript\n   function handleMotionEvent(ws, msg) {\n     const { camId, timestamp, percentage } = msg\n     if (!camId || !timestamp) {\n       console.warn('[signaling] motion event missing camId or timestamp')\n       return\n     }\n     \n     // Verify sender is a registered camera\n     if (ws._role !== 'camera' || ws._id !== camId) {\n       console.warn(`[signaling] motion event from non-camera or ID mismatch`)\n       return\n     }\n     \n     console.log(`[signaling] motion detected on ${camId} at ${timestamp}`)\n     \n     // Broadcast to all dashboard viewers\n     const payload = {\n       type: 'motion',\n       camId,\n       timestamp,\n       percentage: percentage || null\n     }\n     \n     for (const { ws: viewerWs } of viewers.values()) {\n       send(viewerWs, payload)\n     }\n   }\n   ```\n\n3. Server-side implementation notes:\n   - No data persistence required — events are ephemeral real-time notifications\n   - Only registered cameras (ws._role === 'camera') can send motion events\n   - Broadcast to ALL dashboard viewers regardless of which camera they're watching\n   - Include optional 'percentage' field for motion sensitivity percentage\n   - Use existing send() helper for safe WebSocket transmission\n\n4. Expected message format from phone client:\n   ```javascript\n   {\n     type: 'motion',\n     camId: 'k3f9a2',\n     timestamp: 1672531200000,  // Unix epoch ms\n     percentage: 23.5            // optional: % of pixels changed\n   }\n   ```\n\n5. Expected broadcast format to dashboards:\n   ```javascript\n   {\n     type: 'motion',\n     camId: 'k3f9a2',\n     timestamp: 1672531200000,\n     percentage: 23.5\n   }\n   ```\n\n6. Architecture notes:\n   - Server acts as pure relay (consistent with existing signaling patterns)\n   - No motion event history/log maintained server-side\n   - Uses existing viewers Map to find all dashboard connections\n   - Leverages existing send() function for error handling\n   - Consistent with project's \"minimal dependencies\" constraint",
+        "testStrategy": "1. Manual testing with phone client and dashboard:\n   - Open phone client in one browser, connect camera\n   - Open dashboard in another browser, view the camera feed\n   - Send test motion event from phone client console:\n     ```javascript\n     ws.send(JSON.stringify({\n       type: 'motion',\n       camId: camId,  // use actual camId\n       timestamp: Date.now(),\n       percentage: 25\n     }))\n     ```\n   - Verify dashboard console logs show received motion event with correct data\n   - Verify no server errors in server console logs\n\n2. Test with multiple dashboards:\n   - Open 2+ dashboard tabs\n   - Send motion event from phone\n   - Verify ALL dashboards receive the broadcast\n\n3. Test authorization check:\n   - Try sending motion event from dashboard console (should be ignored)\n   - Verify server logs warning about non-camera sender\n   - Try sending motion with wrong camId (should be rejected)\n\n4. Test edge cases:\n   - Send motion event with missing timestamp (should log warning, not crash)\n   - Send motion event before camera registration (should be rejected)\n   - Send motion event with no viewers connected (should not error)\n\n5. Integration test with Task 21 (client-side motion detection):\n   - Once client motion detector is implemented, verify events flow end-to-end\n   - Trigger motion on phone by waving hand in front of camera\n   - Verify dashboard receives motion events automatically\n\n6. Verify server logs show:\n   - `[signaling] motion detected on {camId} at {timestamp}` for valid events\n   - Appropriate warnings for malformed or unauthorized motion messages",
+        "status": "done",
+        "dependencies": [
+          "11"
+        ],
+        "priority": "high",
+        "subtasks": [],
+        "updatedAt": "2026-04-19T08:39:55.520Z"
       }
     ],
     "metadata": {
-      "created": "2026-04-13T23:48:46.531Z",
-      "updated": "2026-04-13T23:48:46.532Z",
-      "description": "Tasks for master context"
+      "version": "1.0.0",
+      "lastModified": "2026-04-19T08:41:40.650Z",
+      "taskCount": 22,
+      "completedCount": 5,
+      "tags": [
+        "master"
+      ]
     }
   }
 }

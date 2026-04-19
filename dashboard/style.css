@@ -461,6 +461,101 @@ code {
   flex-shrink: 0;
 }
 
+/* ===== Motion badge ===== */
+.motion-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(251, 146, 60, 0.2);
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.4);
+  white-space: nowrap;
+  user-select: none;
+  animation: motion-pulse 0.4s ease;
+}
+
+.motion-badge[hidden] { display: none; }
+
+@keyframes motion-pulse {
+  0%   { opacity: 0; transform: scale(0.85); }
+  60%  { opacity: 1; transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Flash card border on motion */
+@keyframes motion-border-flash {
+  0%, 100% { box-shadow: none; }
+  50%       { box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.7); }
+}
+
+.camera-card.motion-alert {
+  animation: motion-border-flash 0.6s ease;
+}
+
+/* ===== Motion event log ===== */
+.motion-log-section {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.motion-log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.motion-log-header h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.motion-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.motion-log-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg-elev-1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  animation: log-slide-in 0.2s ease;
+}
+
+@keyframes log-slide-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.log-time {
+  color: var(--text-dim);
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  white-space: nowrap;
+}
+
+.log-cam {
+  color: var(--text);
+}
+
 /* ===== Dimmed badge ===== */
 .dimmed-badge {
   display: inline-flex;

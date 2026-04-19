@@ -38,6 +38,14 @@
       aria-label="Connected cameras"
     ></section>
 
+    <section class="motion-log-section" id="motion-log-section" hidden>
+      <div class="motion-log-header">
+        <h2>Motion Events</h2>
+        <button type="button" class="btn btn-ghost" id="clear-log-btn">Clear</button>
+      </div>
+      <ul class="motion-log" id="motion-log" role="log" aria-label="Motion events" aria-live="polite"></ul>
+    </section>
+
     <section
       id="empty-state"
       class="empty-state"
@@ -63,6 +71,7 @@
           <code class="cam-id-value"></code>
         </div>
         <div class="card-badges">
+          <span class="motion-badge" hidden>⚡ Motion</span>
           <span class="dimmed-badge" hidden>Dimmed</span>
           <span class="status-badge" data-status="idle">
             <span class="status-dot" aria-hidden="true"></span>
