@@ -546,7 +546,7 @@ function setBadge(badgeEl, status) {
   const text = badgeEl.querySelector('.status-text');
   text.textContent = {
     idle: 'Idle',
-    connecting: 'Connecting',
+    connecting: 'Live',
     live: 'Live',
     offline: 'Offline',
     error: 'Error',

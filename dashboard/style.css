@@ -273,12 +273,12 @@ code {
   border-color: rgba(138,147,184,.3);
 }
 .status-badge[data-status="connecting"] {
-  background: rgba(245,180,59,.15);
-  color: #ffd98a;
-  border-color: rgba(245,180,59,.4);
+  background: rgba(34,197,94,.06);
+  color: #6b8f7a;
+  border-color: rgba(34,197,94,.2);
 }
 .status-badge[data-status="connecting"] .status-dot {
-  animation: pulse 1.2s ease-in-out infinite;
+  opacity: 0.4;
 }
 .status-badge[data-status="live"] {
   background: rgba(34,197,94,.18);
@@ -458,10 +458,11 @@ code {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   padding: 8px var(--space-4);
   border-bottom: 1px solid var(--border);
   background: var(--bg-elev-2);
+  overflow: hidden;
 }
 
 /* ===== Motion badge ===== */
