@@ -33,6 +33,9 @@ let pendingRemoteIce = []; // ICE candidates received before remote description 
 
 // Recording state
 let recordingManager = null;
+let autoRecordEnabled = false;
+let autoRecordDurationMs = 5000;
+let autoRecordStopTimer = null;
 
 // DOM
 const camIdDisplay = document.getElementById('camIdDisplay');
@@ -55,6 +58,8 @@ const recordBtn = document.getElementById('recordBtn');
 const recordingIndicator = document.getElementById('recordingIndicator');
 const recTimer = document.getElementById('recTimer');
 const uploadStatus = document.getElementById('uploadStatus');
+const autoRecordToggle = document.getElementById('autoRecordToggle');
+const autoRecordDurationInput = document.getElementById('autoRecordDuration');
 
 camIdDisplay.textContent = camId;
 
@@ -445,6 +450,8 @@ function initRecordingManager() {
 }
 
 function destroyRecordingManager() {
+  clearTimeout(autoRecordStopTimer);
+  autoRecordStopTimer = null;
   if (recordingManager) {
     recordingManager.destroy();
     recordingManager = null;
@@ -464,6 +471,28 @@ recordBtn.addEventListener('click', () => {
     recordingManager.start();
   }
 });
+
+autoRecordToggle.addEventListener('change', () => {
+  autoRecordEnabled = autoRecordToggle.checked;
+});
+
+autoRecordDurationInput.addEventListener('change', () => {
+  const secs = Math.max(1, Math.min(300, Number(autoRecordDurationInput.value) || 5));
+  autoRecordDurationInput.value = secs;
+  autoRecordDurationMs = secs * 1000;
+});
+
+function triggerAutoRecord() {
+  if (!autoRecordEnabled || !recordingManager) return;
+  if (!recordingManager.isRecording) {
+    recordingManager.start();
+  }
+  // Extend (debounce) the stop timer on every motion event
+  clearTimeout(autoRecordStopTimer);
+  autoRecordStopTimer = setTimeout(() => {
+    if (recordingManager && recordingManager.isRecording) recordingManager.stop();
+  }, autoRecordDurationMs);
+}
 
 // ---------- Teardown ----------
 function teardown(finalState) {
@@ -522,6 +551,7 @@ sensitivitySlider.addEventListener('input', () => {
 
 function onMotionDetected(cameraId, timestamp) {
   send({ type: 'motion', camId: cameraId, timestamp });
+  triggerAutoRecord();
 }
 
 function startMotionDetection() {

@@ -181,7 +181,7 @@ function handleCameraList(camList) {
 
   camList.forEach(({ id: camId, locked }) => {
     if (!cameras[camId]) {
-      cameras[camId] = { status: 'idle', pc: null, dimmed: locked, removeTimer: null, motionTimer: null, sensitivity: 20 };
+      cameras[camId] = { status: 'idle', pc: null, dimmed: locked, removeTimer: null, motionTimer: null, sensitivity: 20, recording: false, autoRecord: false, autoRecordDuration: 5000, autoRecordStopTimer: null };
       renderCard(camId);
     } else {
       // Cancel pending removal if camera came back within the grace period
@@ -352,6 +352,9 @@ function handleMotion(camId, timestamp) {
   // Sound alert
   playMotionBeep();
 
+  // Auto-record on motion
+  triggerDashboardAutoRecord(camId);
+
   // Log entry
   const entry = { camId, timestamp };
   motionEvents.unshift(entry);
@@ -514,6 +517,18 @@ function renderCard(camId) {
   const recordBtn = node.querySelector('.record-btn');
   recordBtn.addEventListener('click', () => remoteRecord(camId));
 
+  const autoRecordToggle = node.querySelector('.auto-record-toggle');
+  autoRecordToggle.addEventListener('change', () => {
+    if (cameras[camId]) cameras[camId].autoRecord = autoRecordToggle.checked;
+  });
+
+  const autoRecordDuration = node.querySelector('.auto-record-duration');
+  autoRecordDuration.addEventListener('change', () => {
+    const secs = Math.max(1, Math.min(300, Number(autoRecordDuration.value) || 5));
+    autoRecordDuration.value = secs;
+    if (cameras[camId]) cameras[camId].autoRecordDuration = secs * 1000;
+  });
+
   grid.appendChild(node);
   refreshEmptyState();
 }
@@ -621,6 +636,21 @@ function remoteRecord(camId) {
   if (!cam) return;
   const isRecording = cam.recording ?? false;
   send({ type: isRecording ? 'recording-stop' : 'recording-start', camId });
+}
+
+function triggerDashboardAutoRecord(camId) {
+  const cam = cameras[camId];
+  if (!cam || !cam.autoRecord) return;
+  if (!cam.recording) {
+    send({ type: 'recording-start', camId });
+  }
+  // Debounce: extend stop timer on each motion event
+  clearTimeout(cam.autoRecordStopTimer);
+  cam.autoRecordStopTimer = setTimeout(() => {
+    if (cameras[camId] && cameras[camId].recording) {
+      send({ type: 'recording-stop', camId });
+    }
+  }, cam.autoRecordDuration);
 }
 
 // ============================================================

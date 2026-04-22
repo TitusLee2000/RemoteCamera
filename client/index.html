@@ -49,6 +49,17 @@
       </div>
       <input type="range" id="sensitivitySlider" class="motion-slider" min="0" max="100" value="20" />
       <div class="motion-indicator" id="motionIndicator" hidden>⚡ Motion Detected</div>
+      <div class="auto-record-row">
+        <label class="auto-record-label">
+          <input type="checkbox" id="autoRecordToggle" class="auto-record-checkbox" />
+          Auto-record on motion
+        </label>
+        <div class="auto-record-duration" id="autoRecordDurationRow">
+          <label for="autoRecordDuration" class="duration-label">Stop after</label>
+          <input type="number" id="autoRecordDuration" class="duration-input" min="1" max="300" value="5" />
+          <span class="duration-unit">sec</span>
+        </div>
+      </div>
     </section>
 
     <!-- Dim overlay — shown when lock is active -->

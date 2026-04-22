@@ -363,6 +363,40 @@ button {
   height: 6px;
 }
 
+.auto-record-row {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.auto-record-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  cursor: pointer;
+}
+.auto-record-checkbox { accent-color: #ef4444; width: 16px; height: 16px; cursor: pointer; }
+.auto-record-duration {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 24px;
+}
+.duration-label { font-size: 0.8rem; color: #64748b; }
+.duration-input {
+  width: 56px;
+  padding: 2px 6px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: #f1f5f9;
+  font-size: 0.85rem;
+  text-align: center;
+}
+.duration-unit { font-size: 0.8rem; color: #64748b; }
+
 .motion-indicator {
   background: #fbbf24;
   color: #1c1917;
