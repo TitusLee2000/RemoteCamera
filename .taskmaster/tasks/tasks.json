@@ -204,8 +204,9 @@
         "testStrategy": "Start recording in phone client, verify red dot indicator appears, record for 2 minutes and stop, verify WebM blob created in memory, check file size is reasonable (~15MB for 2min at 1Mbps), trigger upload and verify POST request to server with correct metadata, test with low storage and verify error handling",
         "priority": "high",
         "dependencies": [],
-        "status": "cancelled",
-        "subtasks": []
+        "status": "pending",
+        "subtasks": [],
+        "updatedAt": "2026-04-22T00:44:45.043Z"
       },
       {
         "id": "16",
@@ -217,8 +218,9 @@
         "dependencies": [
           "15"
         ],
-        "status": "cancelled",
-        "subtasks": []
+        "status": "pending",
+        "subtasks": [],
+        "updatedAt": "2026-04-22T00:44:45.086Z"
       },
       {
         "id": "17",
@@ -230,8 +232,9 @@
         "dependencies": [
           "16"
         ],
-        "status": "cancelled",
-        "subtasks": []
+        "status": "pending",
+        "subtasks": [],
+        "updatedAt": "2026-04-22T00:44:45.099Z"
       },
       {
         "id": "18",
@@ -243,8 +246,9 @@
         "dependencies": [
           "17"
         ],
-        "status": "cancelled",
-        "subtasks": []
+        "status": "pending",
+        "subtasks": [],
+        "updatedAt": "2026-04-22T00:44:45.112Z"
       },
       {
         "id": "19",
@@ -270,8 +274,9 @@
         "dependencies": [
           "17"
         ],
-        "status": "cancelled",
-        "subtasks": []
+        "status": "pending",
+        "subtasks": [],
+        "updatedAt": "2026-04-22T00:44:45.126Z"
       },
       {
         "id": "21",
@@ -301,7 +306,7 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-04-19T08:41:40.650Z",
+      "lastModified": "2026-04-22T00:44:45.127Z",
       "taskCount": 22,
       "completedCount": 5,
       "tags": [

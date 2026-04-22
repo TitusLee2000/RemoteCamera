@@ -15,7 +15,8 @@
       "Bash(task-master list *)",
       "Bash(task-master add-task *)",
       "Bash(node -e ' *)",
-      "Bash(task-master set-status *)"
+      "Bash(task-master set-status *)",
+      "Bash(npx task-master *)"
     ]
   }
 }
