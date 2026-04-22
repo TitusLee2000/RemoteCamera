@@ -71,6 +71,12 @@ export function handleMessage(ws, msg) {
       return handleMotion(ws, msg)
     case 'set-sensitivity':
       return handleSetSensitivity(ws, msg)
+    case 'recording-start':
+      return handleRecordingStart(ws, msg)
+    case 'recording-stop':
+      return handleRecordingStop(ws, msg)
+    case 'recording-status':
+      return handleRecordingStatus(ws, msg)
     default:
       console.warn(`[signaling] unknown message type: ${msg.type}`)
   }
@@ -226,6 +232,63 @@ function handleRemoteLock(ws, msg) {
     return
   }
   send(camWs, { type: 'remote-lock', locked })
+}
+
+/**
+ * Dashboard → Server: forward recording-start to the target camera.
+ * Payload from dashboard: { type: 'recording-start', camId }
+ * Forwarded to camera:    { type: 'recording-start' }
+ */
+function handleRecordingStart(ws, msg) {
+  const { camId } = msg
+  if (!camId) {
+    console.warn('[signaling] recording-start missing camId')
+    return
+  }
+  const camWs = cameras.get(camId)
+  if (!camWs) {
+    console.warn(`[signaling] recording-start: camera not found: ${camId}`)
+    return
+  }
+  send(camWs, { type: 'recording-start' })
+}
+
+/**
+ * Dashboard → Server: forward recording-stop to the target camera.
+ * Payload from dashboard: { type: 'recording-stop', camId }
+ * Forwarded to camera:    { type: 'recording-stop' }
+ */
+function handleRecordingStop(ws, msg) {
+  const { camId } = msg
+  if (!camId) {
+    console.warn('[signaling] recording-stop missing camId')
+    return
+  }
+  const camWs = cameras.get(camId)
+  if (!camWs) {
+    console.warn(`[signaling] recording-stop: camera not found: ${camId}`)
+    return
+  }
+  send(camWs, { type: 'recording-stop' })
+}
+
+/**
+ * Camera → Server: broadcast recording-status to all viewers subscribed to that camera.
+ * Payload from camera:    { type: 'recording-status', camId, recording: bool }
+ * Forwarded to viewers:   { type: 'recording-status', camId, recording: bool }
+ */
+function handleRecordingStatus(ws, msg) {
+  const { camId, recording } = msg
+  if (!camId || typeof recording !== 'boolean') {
+    console.warn('[signaling] recording-status missing camId or recording field')
+    return
+  }
+  const payload = { type: 'recording-status', camId, recording }
+  for (const { ws: vws, subscribedCamId } of viewers.values()) {
+    if (subscribedCamId === camId) {
+      send(vws, payload)
+    }
+  }
 }
 
 /**

@@ -46,6 +46,34 @@
       <ul class="motion-log" id="motion-log" role="log" aria-label="Motion events" aria-live="polite"></ul>
     </section>
 
+    <section class="recordings-section" id="recordings-section">
+      <div class="recordings-header">
+        <h2>Recordings</h2>
+        <div class="recordings-controls">
+          <select class="recordings-filter" id="recordings-cam-filter" aria-label="Filter by camera">
+            <option value="">All Cameras</option>
+          </select>
+          <button type="button" class="btn btn-ghost" id="refresh-recordings-btn">Refresh</button>
+        </div>
+      </div>
+
+      <div class="recordings-table-wrap" id="recordings-table-wrap">
+        <table class="recordings-table" aria-label="Recordings list">
+          <thead>
+            <tr>
+              <th scope="col">Camera</th>
+              <th scope="col">Date / Time</th>
+              <th scope="col">Duration</th>
+              <th scope="col">Size</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="recordings-tbody"></tbody>
+        </table>
+        <p class="recordings-empty" id="recordings-empty" hidden>No recordings yet.</p>
+      </div>
+    </section>
+
     <section
       id="empty-state"
       class="empty-state"
@@ -86,6 +114,10 @@
           <input type="checkbox" class="dim-toggle-input" aria-label="Dim camera screen" />
         </label>
         <span class="motion-badge" hidden>⚡ Motion</span>
+        <span class="recording-badge" hidden>
+          <span class="rec-dot" aria-hidden="true"></span>
+          REC
+        </span>
       </div>
 
       <div class="video-wrap">
@@ -138,6 +170,26 @@
       </footer>
     </article>
   </template>
+
+  <!-- Playback modal -->
+  <div class="playback-modal" id="playback-modal" role="dialog" aria-modal="true" aria-label="Recording playback" hidden>
+    <div class="playback-backdrop" id="playback-backdrop"></div>
+    <div class="playback-card">
+      <header class="playback-card-head">
+        <div class="playback-meta" id="playback-meta">
+          <span class="playback-meta-cam" id="playback-meta-cam"></span>
+          <span class="playback-meta-time" id="playback-meta-time"></span>
+          <span class="playback-meta-dur" id="playback-meta-dur"></span>
+        </div>
+        <button type="button" class="playback-close-btn" id="playback-close-btn" aria-label="Close playback">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </header>
+      <video class="playback-video" id="playback-video" controls playsinline></video>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

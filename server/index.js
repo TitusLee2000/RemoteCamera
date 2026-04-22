@@ -16,6 +16,7 @@ import {
   handleMessage,
   cleanup,
 } from './signaling.js'
+import { recordingRouter } from './recording-routes.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -27,6 +28,9 @@ export function createApp() {
   const app = express()
 
   app.use(express.json())
+
+  // Recording REST API
+  app.use('/api/recordings', recordingRouter)
 
   // Serve phone client and dashboard as static sites.
   // Phone:     http://<LAN-IP>:3001/client

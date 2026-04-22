@@ -25,6 +25,7 @@ const cameras = {};
 const motionEvents = []; // { camId, timestamp } — last 100 events
 const MOTION_ALERT_DURATION_MS = 5000;
 const MAX_LOG_ENTRIES = 100;
+let recordingsRefreshTimer = null;
 
 // Stable viewer id for this browser tab
 const viewerId = 'viewer-' + Math.random().toString(36).slice(2, 10);
@@ -44,6 +45,21 @@ const cameraCount = document.getElementById('camera-count');
 const motionLogSection = document.getElementById('motion-log-section');
 const motionLogEl = document.getElementById('motion-log');
 const clearLogBtn = document.getElementById('clear-log-btn');
+
+// Recordings DOM refs
+const recordingsCamFilter = document.getElementById('recordings-cam-filter');
+const refreshRecordingsBtn = document.getElementById('refresh-recordings-btn');
+const recordingsTbody = document.getElementById('recordings-tbody');
+const recordingsEmpty = document.getElementById('recordings-empty');
+
+// Playback modal refs
+const playbackModal = document.getElementById('playback-modal');
+const playbackBackdrop = document.getElementById('playback-backdrop');
+const playbackVideo = document.getElementById('playback-video');
+const playbackMetaCam = document.getElementById('playback-meta-cam');
+const playbackMetaTime = document.getElementById('playback-meta-time');
+const playbackMetaDur = document.getElementById('playback-meta-dur');
+const playbackCloseBtn = document.getElementById('playback-close-btn');
 
 clearLogBtn.addEventListener('click', () => {
   motionEvents.length = 0;
@@ -144,6 +160,10 @@ function handleServerMessage(msg) {
 
     case 'lock-state':
       handleLockState(msg.camId, msg.locked);
+      break;
+
+    case 'recording-status':
+      handleRecordingStatus(msg.camId, msg.recording);
       break;
 
     case 'error':
@@ -574,6 +594,171 @@ function cssEscape(s) {
   return String(s).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
 }
 
+// ============================================================
+// Recording status (WebSocket push)
+// ============================================================
+function handleRecordingStatus(camId, recording) {
+  const card = getCardEl(camId);
+  if (!card) return;
+  const badge = card.querySelector('.recording-badge');
+  if (badge) badge.hidden = !recording;
+}
+
+// ============================================================
+// Recordings — REST API
+// ============================================================
+
+// Format helpers
+function fmtDuration(ms) {
+  if (!ms && ms !== 0) return '—';
+  const totalSec = Math.round(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function fmtSize(bytes) {
+  if (!bytes && bytes !== 0) return '—';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function fmtDateTime(iso) {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleString();
+  } catch {
+    return iso;
+  }
+}
+
+async function fetchRecordings(camIdFilter) {
+  try {
+    const url = camIdFilter
+      ? `/api/recordings?camId=${encodeURIComponent(camIdFilter)}`
+      : '/api/recordings';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    renderRecordingsTable(data);
+    populateCamFilter(data);
+  } catch (err) {
+    console.error('fetchRecordings failed:', err);
+  }
+}
+
+function populateCamFilter(recordings) {
+  const currentVal = recordingsCamFilter.value;
+  // Collect unique camIds from recordings plus any currently connected camera
+  const camIds = new Set(recordings.map((r) => r.camId));
+  Object.keys(cameras).forEach((id) => camIds.add(id));
+
+  // Rebuild options, keep current selection
+  recordingsCamFilter.innerHTML = '<option value="">All Cameras</option>';
+  camIds.forEach((id) => {
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = id;
+    if (id === currentVal) opt.selected = true;
+    recordingsCamFilter.appendChild(opt);
+  });
+  if (currentVal && !camIds.has(currentVal)) {
+    recordingsCamFilter.value = '';
+  }
+}
+
+function renderRecordingsTable(recordings) {
+  recordingsTbody.innerHTML = '';
+  if (!recordings || recordings.length === 0) {
+    recordingsEmpty.hidden = false;
+    return;
+  }
+  recordingsEmpty.hidden = true;
+
+  recordings.forEach((rec) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><code class="rec-cam-id">${escapeHtml(rec.camId)}</code></td>
+      <td class="rec-datetime">${fmtDateTime(rec.startTime)}</td>
+      <td class="rec-duration">${fmtDuration(rec.duration)}</td>
+      <td class="rec-size">${fmtSize(rec.fileSize)}</td>
+      <td class="rec-actions">
+        <button type="button" class="btn-pill btn-pill-play" data-id="${escapeHtml(rec.id)}" aria-label="Play recording">Play</button>
+        <button type="button" class="btn-pill btn-pill-delete" data-id="${escapeHtml(rec.id)}" aria-label="Delete recording">Delete</button>
+      </td>
+    `;
+
+    tr.querySelector('.btn-pill-play').addEventListener('click', () => {
+      openPlaybackModal(rec);
+    });
+    tr.querySelector('.btn-pill-delete').addEventListener('click', () => {
+      deleteRecording(rec.id);
+    });
+
+    recordingsTbody.appendChild(tr);
+  });
+}
+
+async function deleteRecording(id) {
+  if (!confirm('Delete this recording? This cannot be undone.')) return;
+  try {
+    const res = await fetch(`/api/recordings/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    fetchRecordings(recordingsCamFilter.value || undefined);
+  } catch (err) {
+    console.error('deleteRecording failed:', err);
+    alert('Failed to delete recording. Please try again.');
+  }
+}
+
+function openPlaybackModal(rec) {
+  playbackVideo.src = `/api/recordings/${encodeURIComponent(rec.id)}/download`;
+  playbackMetaCam.textContent = `Camera: ${rec.camId}`;
+  playbackMetaTime.textContent = fmtDateTime(rec.startTime);
+  playbackMetaDur.textContent = `Duration: ${fmtDuration(rec.duration)}`;
+  playbackModal.hidden = false;
+  playbackVideo.focus();
+}
+
+function closePlaybackModal() {
+  playbackModal.hidden = true;
+  playbackVideo.pause();
+  playbackVideo.src = '';
+}
+
+function startRecordingsAutoRefresh() {
+  clearInterval(recordingsRefreshTimer);
+  recordingsRefreshTimer = setInterval(() => {
+    fetchRecordings(recordingsCamFilter.value || undefined);
+  }, 30000);
+}
+
+// Recordings event listeners
+refreshRecordingsBtn.addEventListener('click', () => {
+  fetchRecordings(recordingsCamFilter.value || undefined);
+});
+
+recordingsCamFilter.addEventListener('change', () => {
+  fetchRecordings(recordingsCamFilter.value || undefined);
+});
+
+playbackCloseBtn.addEventListener('click', closePlaybackModal);
+playbackBackdrop.addEventListener('click', closePlaybackModal);
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !playbackModal.hidden) closePlaybackModal();
+});
+
+// ----- HTML escape helper -----
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 // Bootstrap
 refreshEmptyState();
 connect();
+fetchRecordings();
+startRecordingsAutoRefresh();

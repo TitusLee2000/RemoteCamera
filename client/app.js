@@ -31,6 +31,9 @@ let localStream = null;
 let viewerId = null;      // set when 'request-offer' arrives
 let pendingRemoteIce = []; // ICE candidates received before remote description set
 
+// Recording state
+let recordingManager = null;
+
 // DOM
 const camIdDisplay = document.getElementById('camIdDisplay');
 const previewVideo = document.getElementById('preview');
@@ -45,6 +48,13 @@ const motionControls = document.getElementById('motionControls');
 const sensitivitySlider = document.getElementById('sensitivitySlider');
 const sensitivityValue = document.getElementById('sensitivityValue');
 const motionIndicator = document.getElementById('motionIndicator');
+
+// Recording DOM
+const recordingControls = document.getElementById('recordingControls');
+const recordBtn = document.getElementById('recordBtn');
+const recordingIndicator = document.getElementById('recordingIndicator');
+const recTimer = document.getElementById('recTimer');
+const uploadStatus = document.getElementById('uploadStatus');
 
 camIdDisplay.textContent = camId;
 
@@ -113,6 +123,9 @@ startBtn.addEventListener('click', async () => {
   // 2) Open WebSocket and register.
   connectWebSocket();
 
+  // 3) Init recording manager with the live stream.
+  initRecordingManager();
+
   startBtn.hidden = true;
   stopBtn.hidden = false;
   lockBtn.hidden = false;
@@ -175,6 +188,16 @@ function connectWebSocket() {
           motionSensitivity = msg.sensitivity;
           sensitivitySlider.value = motionSensitivity;
           sensitivityValue.textContent = motionSensitivity;
+        }
+        break;
+      case 'recording-start':
+        if (recordingManager && !recordingManager.isRecording) {
+          recordingManager.start();
+        }
+        break;
+      case 'recording-stop':
+        if (recordingManager && recordingManager.isRecording) {
+          recordingManager.stop();
         }
         break;
       default:
@@ -279,8 +302,173 @@ async function handleRemoteIce(msg) {
   }
 }
 
+// ---------- Recording ----------
+class RecordingManager {
+  constructor(stream) {
+    this.stream = stream;
+    this.mediaRecorder = null;
+    this.chunks = [];
+    this.startTime = null;
+    this.timerInterval = null;
+    this.isRecording = false;
+
+    // Determine best supported mimeType
+    const mimeTypes = [
+      'video/webm;codecs=vp8',
+      'video/webm',
+      'video/mp4',
+    ];
+    this.mimeType = mimeTypes.find((t) => MediaRecorder.isTypeSupported(t)) || '';
+  }
+
+  start() {
+    if (this.isRecording) return;
+    this.chunks = [];
+    this.startTime = new Date().toISOString();
+
+    const options = { videoBitsPerSecond: 1_000_000 };
+    if (this.mimeType) options.mimeType = this.mimeType;
+
+    try {
+      this.mediaRecorder = new MediaRecorder(this.stream, options);
+    } catch (err) {
+      console.error('[rec] MediaRecorder init failed', err);
+      return;
+    }
+
+    this.mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) this.chunks.push(e.data);
+    };
+
+    this.mediaRecorder.onstop = () => {
+      const blob = new Blob(this.chunks, {
+        type: this.mimeType || 'video/webm',
+      });
+      const duration = Date.now() - new Date(this.startTime).getTime();
+      this._upload(blob, this.startTime, duration);
+    };
+
+    this.mediaRecorder.start(1000); // collect chunks every 1s
+    this.isRecording = true;
+    this._startTimer();
+    this._updateUI(true);
+    send({ type: 'recording-status', camId, recording: true });
+  }
+
+  stop() {
+    if (!this.isRecording) return;
+    this.isRecording = false;
+    this._stopTimer();
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+    this._updateUI(false);
+    send({ type: 'recording-status', camId, recording: false });
+  }
+
+  _startTimer() {
+    const startMs = Date.now();
+    recTimer.textContent = '00:00';
+    recordingIndicator.hidden = false;
+    this.timerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startMs) / 1000);
+      const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const ss = String(elapsed % 60).padStart(2, '0');
+      recTimer.textContent = `${mm}:${ss}`;
+    }, 1000);
+  }
+
+  _stopTimer() {
+    clearInterval(this.timerInterval);
+    this.timerInterval = null;
+    recordingIndicator.hidden = true;
+    recTimer.textContent = '00:00';
+  }
+
+  _updateUI(recording) {
+    if (recording) {
+      recordBtn.textContent = 'Stop Recording';
+      recordBtn.classList.add('recording');
+    } else {
+      recordBtn.textContent = 'Record';
+      recordBtn.classList.remove('recording');
+    }
+  }
+
+  async _upload(blob, startTime, duration) {
+    uploadStatus.textContent = 'Uploading\u2026';
+    uploadStatus.className = 'upload-status uploading';
+    uploadStatus.hidden = false;
+
+    try {
+      const form = new FormData();
+      form.append('video', blob, 'recording.webm');
+      form.append('camId', camId);
+      form.append('startTime', startTime);
+      form.append('duration', String(duration));
+
+      const res = await fetch('/api/recordings/upload', {
+        method: 'POST',
+        body: form,
+      });
+
+      if (res.ok) {
+        uploadStatus.textContent = 'Saved \u2713';
+        uploadStatus.className = 'upload-status saved';
+      } else {
+        throw new Error('HTTP ' + res.status);
+      }
+    } catch (err) {
+      console.error('[rec] upload failed', err);
+      uploadStatus.textContent = 'Upload failed';
+      uploadStatus.className = 'upload-status failed';
+    }
+
+    // Hide upload status after 4 seconds
+    setTimeout(() => {
+      uploadStatus.hidden = true;
+      uploadStatus.textContent = '';
+      uploadStatus.className = 'upload-status';
+    }, 4000);
+  }
+
+  destroy() {
+    if (this.isRecording) this.stop();
+    this._stopTimer();
+  }
+}
+
+function initRecordingManager() {
+  if (!localStream) return;
+  recordingManager = new RecordingManager(localStream);
+  recordingControls.hidden = false;
+}
+
+function destroyRecordingManager() {
+  if (recordingManager) {
+    recordingManager.destroy();
+    recordingManager = null;
+  }
+  recordingControls.hidden = true;
+  recordingIndicator.hidden = true;
+  uploadStatus.hidden = true;
+  recordBtn.textContent = 'Record';
+  recordBtn.classList.remove('recording');
+}
+
+recordBtn.addEventListener('click', () => {
+  if (!recordingManager) return;
+  if (recordingManager.isRecording) {
+    recordingManager.stop();
+  } else {
+    recordingManager.start();
+  }
+});
+
 // ---------- Teardown ----------
 function teardown(finalState) {
+  destroyRecordingManager();
+
   try { if (pc) pc.close(); } catch (_) {}
   pc = null;
   viewerId = null;
