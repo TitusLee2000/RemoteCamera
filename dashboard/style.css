@@ -740,6 +740,42 @@ video:-webkit-full-screen {
   50%       { opacity: 0.5; transform: scale(0.8); }
 }
 
+/* ===== Remote record button ===== */
+.btn-record {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(239,68,68,.15);
+  border: 1px solid rgba(239,68,68,.4);
+  color: #fca5a5;
+  cursor: pointer;
+  transition: background var(--duration), border-color var(--duration);
+}
+.btn-record:hover {
+  background: rgba(239,68,68,.28);
+  border-color: rgba(239,68,68,.7);
+}
+.btn-record .rec-btn-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  flex-shrink: 0;
+}
+.btn-record.recording {
+  background: rgba(239,68,68,.3);
+  border-color: var(--danger);
+  color: #fff;
+}
+.btn-record.recording .rec-btn-dot {
+  animation: rec-pulse 1.2s ease-in-out infinite;
+}
+
 /* ===== Recordings section ===== */
 .recordings-section {
   margin-top: 32px;

@@ -511,6 +511,9 @@ function renderCard(camId) {
   const video = node.querySelector('video');
   fsBtn.addEventListener('click', () => toggleFullscreen(video));
 
+  const recordBtn = node.querySelector('.record-btn');
+  recordBtn.addEventListener('click', () => remoteRecord(camId));
+
   grid.appendChild(node);
   refreshEmptyState();
 }
@@ -526,8 +529,9 @@ function updateCardStatus(camId, status) {
   const viewBtn = card.querySelector('.view-btn');
   const retryBtn = card.querySelector('.retry-btn');
 
-  // fullscreen only shown when live
+  // fullscreen + record only shown when live
   card.querySelector('.fullscreen-btn').hidden = true;
+  card.querySelector('.record-btn').hidden = true;
 
   if (status === 'offline') {
     viewBtn.hidden = true;
@@ -553,6 +557,7 @@ function updateCardStatus(camId, status) {
     viewBtn.hidden = true;
     retryBtn.hidden = true;
     card.querySelector('.fullscreen-btn').hidden = false;
+    card.querySelector('.record-btn').hidden = false;
   }
 
   // Reset "View" label when going back to idle from connecting
@@ -602,6 +607,20 @@ function handleRecordingStatus(camId, recording) {
   if (!card) return;
   const badge = card.querySelector('.recording-badge');
   if (badge) badge.hidden = !recording;
+  const btn = card.querySelector('.record-btn');
+  if (btn) {
+    btn.classList.toggle('recording', recording);
+    btn.querySelector('.rec-btn-text').textContent = recording ? 'Stop Rec' : 'Record';
+    btn.setAttribute('aria-label', recording ? 'Stop recording' : 'Start recording');
+  }
+  if (cameras[camId]) cameras[camId].recording = recording;
+}
+
+function remoteRecord(camId) {
+  const cam = cameras[camId];
+  if (!cam) return;
+  const isRecording = cam.recording ?? false;
+  send({ type: isRecording ? 'recording-stop' : 'recording-start', camId });
 }
 
 // ============================================================
