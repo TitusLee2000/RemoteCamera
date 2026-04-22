@@ -101,5 +101,98 @@ Allow camera feeds to be recorded and played back later.
 
 ### Out of Scope (v4)
 - Cloud storage integration
-- Motion-triggered recording (considered for v4.1)
+- Motion-triggered recording (considered for v4.1 — built in v4)
 - Video export / download
+
+---
+
+## Version 5 — Auth & Access Control
+
+### Goal
+Restrict who can view cameras and control the system. Support multiple users
+with different permission levels.
+
+### Out of Scope (v1–v2)
+Multi-user auth and access control were explicitly deferred.
+
+### Features (TBD — pending brainstorm)
+- User authentication (login / session)
+- Role-based access: admin vs. viewer
+- Per-camera access control
+- Dashboard protected behind login
+- Camera registration requires a shared secret or pairing code
+
+### Out of Scope (v5)
+- OAuth / SSO
+- Fine-grained per-recording permissions
+- Mobile native auth flows
+
+---
+
+## Version 6 — Cloud & Remote Storage
+
+### Goal
+Move recordings off the local server disk to durable cloud storage.
+
+### Features (TBD)
+- Cloud storage backend (S3-compatible: AWS, Backblaze, Cloudflare R2)
+- Recording upload goes direct to cloud after capture
+- Playback streamed from cloud URL
+- Video export / download to local device
+- Storage quota display and management UI
+
+### Out of Scope (v6)
+- Multi-cloud redundancy
+- CDN delivery
+- Paid tier / billing
+
+---
+
+## Version 7 — AI & Smart Detection
+
+### Goal
+Move beyond pixel-diff motion detection to understand what is actually in frame.
+
+### Features (TBD)
+- AI object recognition (person, vehicle, animal) — client-side via TensorFlow.js or server-side
+- Alert filtering: only notify on specific object classes
+- Push notifications (Web Push API) to browser
+- Email alerts via SMTP / SendGrid
+- Configurable alert rules per camera
+
+### Out of Scope (v7)
+- Facial recognition
+- License plate reading
+- Custom model training
+
+---
+
+## Version 8 — Native Mobile App
+
+### Goal
+Replace the mobile browser client with a proper native app for reliability,
+background streaming, and push notifications.
+
+### Features (TBD)
+- iOS and/or Android native app (React Native or Flutter)
+- Background camera streaming when app is minimized
+- Native push notifications for motion events
+- App-based pairing flow (QR code scan to connect to server)
+
+### Out of Scope (v8)
+- App Store / Play Store distribution
+- Multiple simultaneous cameras per device
+
+---
+
+## Version 9 — Infrastructure & Scale
+
+### Goal
+Make the system production-ready for larger deployments.
+
+### Features (TBD)
+- Self-hosted TURN server (coturn) to remove Metered.ca dependency
+- Multi-server support with load balancing
+- Horizontal scaling of signaling server
+- Health monitoring and alerting (uptime, camera count, disk usage)
+- Admin dashboard for server stats

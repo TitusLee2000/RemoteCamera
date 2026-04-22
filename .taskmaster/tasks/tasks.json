@@ -204,9 +204,9 @@
         "testStrategy": "Start recording in phone client, verify red dot indicator appears, record for 2 minutes and stop, verify WebM blob created in memory, check file size is reasonable (~15MB for 2min at 1Mbps), trigger upload and verify POST request to server with correct metadata, test with low storage and verify error handling",
         "priority": "high",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [],
-        "updatedAt": "2026-04-22T00:44:45.043Z"
+        "updatedAt": "2026-04-22T18:20:42.837Z"
       },
       {
         "id": "16",
@@ -218,9 +218,9 @@
         "dependencies": [
           "15"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [],
-        "updatedAt": "2026-04-22T00:44:45.086Z"
+        "updatedAt": "2026-04-22T18:20:42.870Z"
       },
       {
         "id": "17",
@@ -232,9 +232,9 @@
         "dependencies": [
           "16"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [],
-        "updatedAt": "2026-04-22T00:44:45.099Z"
+        "updatedAt": "2026-04-22T18:20:42.884Z"
       },
       {
         "id": "18",
@@ -246,9 +246,9 @@
         "dependencies": [
           "17"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [],
-        "updatedAt": "2026-04-22T00:44:45.112Z"
+        "updatedAt": "2026-04-22T18:20:42.896Z"
       },
       {
         "id": "19",
@@ -274,9 +274,9 @@
         "dependencies": [
           "17"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [],
-        "updatedAt": "2026-04-22T00:44:45.126Z"
+        "updatedAt": "2026-04-22T18:20:42.910Z"
       },
       {
         "id": "21",
@@ -306,9 +306,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-04-22T00:44:45.127Z",
+      "lastModified": "2026-04-22T18:20:42.911Z",
       "taskCount": 22,
-      "completedCount": 5,
+      "completedCount": 10,
       "tags": [
         "master"
       ]
