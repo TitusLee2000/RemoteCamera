@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RemoteCamera — Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="login-wrap">
+    <div class="login-card">
+      <div class="brand">
+        <div class="brand-dot"></div>
+        <h1>RemoteCamera</h1>
+      </div>
+
+      <!-- First-run setup form (hidden by default) -->
+      <section id="setup-section" hidden>
+        <h2>Create Admin Account</h2>
+        <p class="hint">No accounts exist yet. Set up your admin account to get started.</p>
+        <form id="setup-form">
+          <label>Email<input type="email" id="setup-email" required autocomplete="email" /></label>
+          <label>Password<input type="password" id="setup-password" required minlength="8" autocomplete="new-password" /></label>
+          <div class="error-msg" id="setup-error" hidden></div>
+          <button type="submit" class="btn-primary">Create Admin Account</button>
+        </form>
+      </section>
+
+      <!-- Normal login (shown after first-run check) -->
+      <section id="login-section" hidden>
+        <div class="tab-bar">
+          <button class="tab active" id="tab-dashboard" type="button">Dashboard</button>
+          <button class="tab" id="tab-camera" type="button">Camera</button>
+        </div>
+
+        <!-- Dashboard login -->
+        <form id="dashboard-form" class="tab-panel">
+          <label>Email<input type="email" id="login-email" required autocomplete="email" /></label>
+          <label>Password<input type="password" id="login-password" required autocomplete="current-password" /></label>
+          <label class="remember-row">
+            <input type="checkbox" id="remember-me" /> Remember me for 7 days
+          </label>
+          <div class="error-msg" id="login-error" hidden></div>
+          <button type="submit" class="btn-primary">Sign In</button>
+        </form>
+
+        <!-- Camera login -->
+        <form id="camera-form" class="tab-panel" hidden>
+          <label>Access Code
+            <input type="text" id="camera-code" required autocomplete="off"
+              placeholder="Paste code from operator" spellcheck="false" />
+          </label>
+          <div class="error-msg" id="camera-error" hidden></div>
+          <button type="submit" class="btn-primary">Connect Camera</button>
+        </form>
+      </section>
+    </div>
+  </main>
+  <script src="app.js" type="module"></script>
+</body>
+</html>
