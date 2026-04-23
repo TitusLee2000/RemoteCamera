@@ -101,7 +101,9 @@ server/
 | View camera streams | — | ✓ | ✓ |
 | Control cameras (record, dim, lock) | — | ✓ | — |
 | Generate / manage camera slots | — | ✓ | — |
-| View recordings | — | ✓ | ✓ |
+| View all recordings | — | ✓ | — |
+| View own slot recordings | — | ✓ | ✓ (own slot only) |
+| Download recordings | — | ✓ | ✓ (own slot only) |
 | Delete recordings | — | ✓ | — |
 | List users | ✓ | — | — |
 | Create users | ✓ | — | — |
