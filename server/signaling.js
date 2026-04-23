@@ -2,6 +2,8 @@
 // The server is a pure relay: it does not inspect WebRTC payloads,
 // it only routes messages between cameras and viewers based on ids.
 
+import { pool } from './db/index.js'
+
 // cameras: camId → WebSocket
 export const cameras = new Map()
 // viewers: viewerId → { ws, subscribedCamId }
@@ -54,7 +56,7 @@ export function handleMessage(ws, msg) {
 
   switch (msg.type) {
     case 'register':
-      return handleRegister(ws, msg)
+      return void handleRegister(ws, msg).catch((e) => console.error('[signaling] register error:', e))
     case 'viewer-join':
       return handleViewerJoin(ws, msg)
     case 'offer':
@@ -82,27 +84,41 @@ export function handleMessage(ws, msg) {
   }
 }
 
-function handleRegister(ws, msg) {
-  const { camId } = msg
-  if (!camId) {
-    console.warn('[signaling] register missing camId')
+async function handleRegister(ws, msg) {
+  const { code } = msg
+  if (!code) {
+    ws.send(JSON.stringify({ type: 'error', message: 'missing-code' }))
+    ws.terminate()
     return
   }
 
-  // If camId is already registered, replace the old socket and warn.
-  if (cameras.has(camId)) {
-    console.warn(`[signaling] camera ${camId} already registered — replacing`)
-    const oldWs = cameras.get(camId)
-    if (oldWs && oldWs !== ws) {
-      try { oldWs.close() } catch {}
-    }
+  const { rows } = await pool.query(
+    'SELECT id, name FROM camera_slots WHERE code = $1',
+    [code]
+  )
+  if (rows.length === 0) {
+    ws.send(JSON.stringify({ type: 'error', message: 'invalid-code' }))
+    ws.terminate()
+    return
   }
 
-  ws._role = 'camera'
-  ws._id = camId
-  cameras.set(camId, ws)
-  console.log(`[signaling] camera registered: ${camId}`)
+  const slot = rows[0]
+  const slotId = slot.id
 
+  // Disconnect any existing camera on this slot
+  if (cameras.has(slotId)) {
+    const existing = cameras.get(slotId)
+    try { existing.terminate() } catch {}
+  }
+
+  ws._slotId = slotId
+  ws._slotName = slot.name
+  ws._role = 'camera'
+  ws._id = slotId
+  cameras.set(slotId, ws)
+  cameraLockStates.set(slotId, false)
+
+  ws.send(JSON.stringify({ type: 'registered', slotId, slotName: slot.name }))
   broadcastCameraList()
 }
 
