@@ -811,3 +811,160 @@ refreshEmptyState();
 connect();
 fetchRecordings();
 startRecordingsAutoRefresh();
+
+// ============================================================
+// Session + role init
+// ============================================================
+async function initSession() {
+  const res = await fetch('/api/auth/me')
+  if (!res.ok) { window.location.href = '/login'; return }
+  const user = await res.json()
+  window._userRole = user.role
+  if (user.role === 'operator') {
+    document.getElementById('slots-section').hidden = false
+    fetchSlots()
+  }
+  if (user.role === 'admin') {
+    document.getElementById('admin-section').hidden = false
+    fetchUsers()
+  }
+}
+
+// ============================================================
+// Slot management (operator only)
+// ============================================================
+async function fetchSlots() {
+  const res = await fetch('/api/slots')
+  if (!res.ok) return
+  const slots = await res.json()
+  renderSlots(slots)
+}
+
+function renderSlots(slots) {
+  const tbody = document.getElementById('slots-tbody')
+  tbody.innerHTML = ''
+  for (const slot of slots) {
+    const tr = document.createElement('tr')
+    tr.innerHTML = `
+      <td>${slot.name}</td>
+      <td>
+        <span class="code-masked" data-code="${slot.code}">••••••••••••</span>
+        <button class="btn-pill reveal-btn" data-code="${slot.code}">Reveal</button>
+        <button class="btn-pill copy-btn" data-code="${slot.code}">Copy</button>
+      </td>
+      <td><span class="slot-status ${slot.live ? 'live' : 'idle'}">${slot.live ? 'Live' : 'Idle'}</span></td>
+      <td>
+        <button class="btn-pill regen-btn" data-id="${slot.id}">Regen Code</button>
+        <button class="btn-pill delete-slot-btn" data-id="${slot.id}">Delete</button>
+      </td>
+    `
+    tbody.appendChild(tr)
+  }
+
+  tbody.querySelectorAll('.reveal-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const masked = btn.previousElementSibling
+      const isRevealed = masked.textContent !== '••••••••••••'
+      masked.textContent = isRevealed ? '••••••••••••' : btn.dataset.code
+      btn.textContent = isRevealed ? 'Reveal' : 'Hide'
+    })
+  })
+  tbody.querySelectorAll('.copy-btn').forEach((btn) => {
+    btn.addEventListener('click', () => navigator.clipboard.writeText(btn.dataset.code))
+  })
+  tbody.querySelectorAll('.regen-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Regenerate code? The connected camera will be disconnected.')) return
+      await fetch(`/api/slots/${btn.dataset.id}/regenerate`, { method: 'POST' })
+      fetchSlots()
+    })
+  })
+  tbody.querySelectorAll('.delete-slot-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete slot? The connected camera will be disconnected.')) return
+      await fetch(`/api/slots/${btn.dataset.id}`, { method: 'DELETE' })
+      fetchSlots()
+    })
+  })
+}
+
+document.getElementById('add-slot-btn')?.addEventListener('click', () => {
+  document.getElementById('add-slot-form').hidden = false
+})
+document.getElementById('slot-name-cancel')?.addEventListener('click', () => {
+  document.getElementById('add-slot-form').hidden = true
+})
+document.getElementById('slot-name-submit')?.addEventListener('click', async () => {
+  const name = document.getElementById('slot-name-input').value.trim()
+  if (!name) return
+  await fetch('/api/slots', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  })
+  document.getElementById('add-slot-form').hidden = true
+  document.getElementById('slot-name-input').value = ''
+  fetchSlots()
+})
+
+// ============================================================
+// User management (admin only)
+// ============================================================
+async function fetchUsers() {
+  const res = await fetch('/api/users')
+  if (!res.ok) return
+  renderUsers(await res.json())
+}
+
+function renderUsers(users) {
+  const tbody = document.getElementById('users-tbody')
+  tbody.innerHTML = ''
+  for (const u of users) {
+    const tr = document.createElement('tr')
+    tr.innerHTML = `
+      <td>${u.email}</td>
+      <td><span class="role-badge role-${u.role}">${u.role}</span></td>
+      <td>${new Date(u.created_at).toLocaleDateString()}</td>
+      <td><button class="btn-pill delete-user-btn" data-id="${u.id}">Delete</button></td>
+    `
+    tbody.appendChild(tr)
+  }
+  tbody.querySelectorAll('.delete-user-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this user?')) return
+      await fetch(`/api/users/${btn.dataset.id}`, { method: 'DELETE' })
+      fetchUsers()
+    })
+  })
+}
+
+document.getElementById('add-user-btn')?.addEventListener('click', () => {
+  document.getElementById('add-user-form').hidden = false
+})
+document.getElementById('user-cancel')?.addEventListener('click', () => {
+  document.getElementById('add-user-form').hidden = true
+})
+document.getElementById('user-submit')?.addEventListener('click', async () => {
+  const email = document.getElementById('user-email-input').value.trim()
+  const password = document.getElementById('user-password-input').value
+  const role = document.getElementById('user-role-select').value
+  if (!email || !password) return
+  const res = await fetch('/api/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, role }),
+  })
+  if (!res.ok) { alert((await res.json()).error); return }
+  document.getElementById('add-user-form').hidden = true
+  fetchUsers()
+})
+
+// Intercept 401 responses globally — redirect to login
+const _origFetch = window.fetch
+window.fetch = async (...args) => {
+  const res = await _origFetch(...args)
+  if (res.status === 401) window.location.href = '/login'
+  return res
+}
+
+initSession()

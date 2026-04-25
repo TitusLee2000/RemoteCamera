@@ -88,6 +88,46 @@
       <h3>No cameras connected yet</h3>
       <p>Open the phone client on a phone to get started.</p>
     </section>
+
+    <section class="slots-section" id="slots-section" hidden>
+      <div class="section-head">
+        <h2>Camera Slots</h2>
+        <button type="button" class="btn btn-primary" id="add-slot-btn">+ Add Slot</button>
+      </div>
+      <div class="add-slot-form" id="add-slot-form" hidden>
+        <input type="text" id="slot-name-input" placeholder="Slot name (e.g. Front Door)" maxlength="60" />
+        <button type="button" class="btn btn-primary" id="slot-name-submit">Create</button>
+        <button type="button" class="btn btn-ghost" id="slot-name-cancel">Cancel</button>
+      </div>
+      <table class="slots-table" id="slots-table">
+        <thead><tr>
+          <th>Name</th><th>Code</th><th>Status</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="slots-tbody"></tbody>
+      </table>
+    </section>
+
+    <section class="admin-section" id="admin-section" hidden>
+      <div class="section-head">
+        <h2>User Management</h2>
+        <button type="button" class="btn btn-primary" id="add-user-btn">+ Add User</button>
+      </div>
+      <div class="add-user-form" id="add-user-form" hidden>
+        <input type="email" id="user-email-input" placeholder="Email" />
+        <input type="password" id="user-password-input" placeholder="Password (min 8 chars)" minlength="8" />
+        <select id="user-role-select">
+          <option value="viewer">Viewer</option>
+          <option value="operator">Operator</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button type="button" class="btn btn-primary" id="user-submit">Create</button>
+        <button type="button" class="btn btn-ghost" id="user-cancel">Cancel</button>
+      </div>
+      <table class="users-table" id="users-table">
+        <thead><tr><th>Email</th><th>Role</th><th>Joined</th><th>Actions</th></tr></thead>
+        <tbody id="users-tbody"></tbody>
+      </table>
+    </section>
   </main>
 
   <!-- Camera card template -->

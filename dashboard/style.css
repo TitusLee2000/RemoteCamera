@@ -1054,3 +1054,49 @@ video:-webkit-full-screen {
   display: block;
   outline: none;
 }
+
+/* ===== Slots & Users panels ===== */
+.slots-section, .admin-section {
+  margin-top: var(--space-6, 2.5rem);
+  padding-top: var(--space-5, 2rem);
+  border-top: 1px solid var(--border, #2a3358);
+}
+.section-head {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;
+}
+.slots-table, .users-table {
+  width: 100%; border-collapse: collapse; font-size: 0.875rem; margin-top: 1rem;
+}
+.slots-table th, .users-table th {
+  text-align: left; padding: 8px 12px; color: var(--text-dim, #94a3b8);
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border, #2a3358);
+}
+.slots-table td, .users-table td { padding: 10px 12px; border-bottom: 1px solid var(--border, #2a3358); }
+.slot-status { font-size: 0.75rem; font-weight: 600; }
+.slot-status.live { color: #86efac; }
+.slot-status.idle { color: var(--text-dim, #94a3b8); }
+.role-badge {
+  padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+}
+.role-admin { background: rgba(239,68,68,.15); color: #fca5a5; }
+.role-operator { background: rgba(79,140,255,.15); color: #93c5fd; }
+.role-viewer { background: rgba(138,147,184,.15); color: #c5cce6; }
+.add-slot-form, .add-user-form {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  padding: 1rem 0; margin-bottom: 1rem;
+}
+.add-slot-form input, .add-user-form input, .add-user-form select {
+  padding: 8px 12px; background: var(--bg-elev-1, #1e293b); border: 1px solid var(--border, #2a3358);
+  border-radius: 8px; color: var(--text, #f1f5f9); font-size: 0.875rem; min-width: 160px;
+}
+.code-masked { font-family: monospace; color: var(--text-dim, #94a3b8); margin-right: 6px; }
+.btn-pill {
+  padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border, #2a3358);
+  background: transparent; color: var(--text-dim, #94a3b8); font-size: 0.75rem; cursor: pointer;
+}
+.btn-pill:hover { background: var(--bg-elev-1, #1e293b); }
+.btn-ghost {
+  padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border, #2a3358);
+  background: transparent; color: var(--text-dim, #94a3b8); font-size: 0.875rem; cursor: pointer;
+}
