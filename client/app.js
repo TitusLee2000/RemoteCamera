@@ -20,9 +20,13 @@ async function getIceServers() {
 }
 // =========================================================================
 
-// Short random camera ID (e.g. "k3f9a2"). Shown to the user so they can
-// tell the dashboard operator which camera to view.
-const camId = Math.random().toString(36).slice(2, 8);
+// Read slot code from URL ?code= parameter; redirect to /login if missing.
+const urlParams = new URLSearchParams(window.location.search)
+const slotCode = urlParams.get('code')
+if (!slotCode) {
+  window.location.href = '/login'
+}
+let camId = null  // set after server confirms registration
 
 // State
 let ws = null;
@@ -61,7 +65,7 @@ const uploadStatus = document.getElementById('uploadStatus');
 const autoRecordToggle = document.getElementById('autoRecordToggle');
 const autoRecordDurationInput = document.getElementById('autoRecordDuration');
 
-camIdDisplay.textContent = camId;
+if (camIdDisplay) camIdDisplay.textContent = 'Connecting…'
 
 // ---------- UI helpers ----------
 function setStatus(state) {
@@ -151,8 +155,8 @@ function connectWebSocket() {
   }
 
   ws.addEventListener('open', () => {
-    console.log('[ws] open — registering camera', camId);
-    send({ type: 'register', camId });
+    console.log('[ws] open — registering with code', slotCode);
+    send({ type: 'register', code: slotCode });
     setStatus('connecting');
   });
 
@@ -205,6 +209,15 @@ function connectWebSocket() {
           recordingManager.stop();
         }
         break;
+      case 'registered':
+        camId = msg.slotId
+        if (camIdDisplay) camIdDisplay.textContent = msg.slotName ?? msg.slotId
+        break
+      case 'error':
+        if (msg.message === 'invalid-code' || msg.message === 'missing-code') {
+          window.location.href = '/login'
+        }
+        break
       default:
         console.log('[ws] ignored message type', msg.type);
     }
