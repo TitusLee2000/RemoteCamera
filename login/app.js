@@ -70,7 +70,7 @@ dashboardForm.addEventListener('submit', async (e) => {
   const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: loginEmail.value, password: loginPassword.value }),
+    body: JSON.stringify({ email: loginEmail.value, password: loginPassword.value, rememberMe: document.getElementById('remember-me').checked }),
   })
   const data = await res.json()
   if (!res.ok) {

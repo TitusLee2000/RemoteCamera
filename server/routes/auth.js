@@ -37,6 +37,9 @@ router.post('/login', (req, res, next) => {
     if (!user) return res.status(401).json({ error: info?.message ?? 'Invalid credentials' })
     req.login(user, (loginErr) => {
       if (loginErr) return next(loginErr)
+      if (!req.body.rememberMe) {
+        req.session.cookie.maxAge = undefined
+      }
       res.json({ ok: true, role: user.role })
     })
   })(req, res, next)
