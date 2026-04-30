@@ -16,7 +16,19 @@
       "Bash(task-master add-task *)",
       "Bash(node -e ' *)",
       "Bash(task-master set-status *)",
-      "Bash(npx task-master *)"
+      "Bash(npx task-master *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(npm view *)",
+      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(32\\).toString\\('hex'\\)\\)\")",
+      "Bash(node scripts/migrate-recordings.js)",
+      "Bash(timeout 8 node server.js)",
+      "Bash(timeout 8 node index.js)",
+      "Bash(taskkill //F //IM node.exe)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "task-master-ai"
+  ]
 }

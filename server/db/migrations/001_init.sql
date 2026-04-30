@@ -1,4 +1,7 @@
-CREATE TYPE user_role AS ENUM ('admin', 'operator', 'viewer');
+DO $$ BEGIN
+  CREATE TYPE user_role AS ENUM ('admin', 'operator', 'viewer');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS users (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -15,6 +18,15 @@ CREATE TABLE IF NOT EXISTS camera_slots (
   created_by   UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS "session" (
+  "sid"    VARCHAR NOT NULL COLLATE "default",
+  "sess"   JSON NOT NULL,
+  "expire" TIMESTAMP(6) NOT NULL,
+  CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE
+);
+
+CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
 
 CREATE TABLE IF NOT EXISTS recordings (
   id           TEXT PRIMARY KEY,
