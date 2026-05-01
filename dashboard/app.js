@@ -820,7 +820,7 @@ async function initSession() {
   if (!res.ok) { window.location.href = '/login'; return }
   const user = await res.json()
   window._userRole = user.role
-  if (user.role === 'operator') {
+  if (user.role === 'operator' || user.role === 'admin') {
     document.getElementById('slots-section').hidden = false
     fetchSlots()
   }
@@ -948,14 +948,18 @@ document.getElementById('user-submit')?.addEventListener('click', async () => {
   const email = document.getElementById('user-email-input').value.trim()
   const password = document.getElementById('user-password-input').value
   const role = document.getElementById('user-role-select').value
-  if (!email || !password) return
+  const errEl = document.getElementById('user-form-error')
+  errEl.hidden = true
+  if (!email || !password) { errEl.textContent = 'Email and password are required'; errEl.hidden = false; return }
   const res = await fetch('/api/users', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, role }),
   })
-  if (!res.ok) { alert((await res.json()).error); return }
+  if (!res.ok) { errEl.textContent = (await res.json()).error ?? 'Failed to create user'; errEl.hidden = false; return }
   document.getElementById('add-user-form').hidden = true
+  document.getElementById('user-email-input').value = ''
+  document.getElementById('user-password-input').value = ''
   fetchUsers()
 })
 

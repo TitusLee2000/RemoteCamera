@@ -113,8 +113,20 @@ export async function createApp() {
     })
   })
 
+  // Ping all clients every 25s to keep connections alive on Render free tier
+  const heartbeat = setInterval(() => {
+    wss.clients.forEach((ws) => {
+      if (ws.isAlive === false) return ws.terminate()
+      ws.isAlive = false
+      ws.ping()
+    })
+  }, 25000)
+  wss.on('close', () => clearInterval(heartbeat))
+
   wss.on('connection', (ws) => {
     console.log('[server] websocket connected')
+    ws.isAlive = true
+    ws.on('pong', () => { ws.isAlive = true })
     allClients.add(ws)
 
     try {
