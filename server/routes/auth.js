@@ -45,6 +45,27 @@ router.post('/login', (req, res, next) => {
   })(req, res, next)
 })
 
+router.post('/register', async (req, res) => {
+  const { email, password } = req.body
+  if (!email || !password || password.length < 8) {
+    return res.status(400).json({ error: 'Email and password (min 8 chars) required' })
+  }
+  const hash = await bcrypt.hash(password, 12)
+  try {
+    const { rows } = await pool.query(
+      'INSERT INTO users (email, password_hash, role) VALUES ($1, $2, $3) RETURNING *',
+      [email.toLowerCase().trim(), hash, 'operator']
+    )
+    req.login(rows[0], (err) => {
+      if (err) return res.status(500).json({ error: 'Login after registration failed' })
+      res.status(201).json({ ok: true })
+    })
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'An account with that email already exists' })
+    throw err
+  }
+})
+
 router.post('/logout', requireAuth(), (req, res) => {
   req.logout(() => res.json({ ok: true }))
 })

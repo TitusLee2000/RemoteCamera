@@ -29,7 +29,8 @@
       <!-- Normal login (shown after first-run check) -->
       <section id="login-section" hidden>
         <div class="tab-bar">
-          <button class="tab active" id="tab-dashboard" type="button">Dashboard</button>
+          <button class="tab active" id="tab-dashboard" type="button">Sign In</button>
+          <button class="tab" id="tab-register" type="button">Sign Up</button>
           <button class="tab" id="tab-camera" type="button">Camera</button>
         </div>
 
@@ -42,6 +43,15 @@
           </label>
           <div class="error-msg" id="login-error" hidden></div>
           <button type="submit" class="btn-primary">Sign In</button>
+        </form>
+
+        <!-- Register -->
+        <form id="register-form" class="tab-panel" hidden>
+          <label>Email<input type="email" id="reg-email" required autocomplete="email" /></label>
+          <label>Password<input type="password" id="reg-password" required minlength="8" autocomplete="new-password" /></label>
+          <label>Confirm Password<input type="password" id="reg-confirm" required autocomplete="new-password" /></label>
+          <div class="error-msg" id="register-error" hidden></div>
+          <button type="submit" class="btn-primary">Create Account</button>
         </form>
 
         <!-- Camera login -->

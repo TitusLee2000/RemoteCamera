@@ -5,13 +5,19 @@ const setupEmail = document.getElementById('setup-email')
 const setupPassword = document.getElementById('setup-password')
 const setupError = document.getElementById('setup-error')
 const dashboardForm = document.getElementById('dashboard-form')
+const registerForm = document.getElementById('register-form')
 const cameraForm = document.getElementById('camera-form')
 const loginEmail = document.getElementById('login-email')
 const loginPassword = document.getElementById('login-password')
 const loginError = document.getElementById('login-error')
+const regEmail = document.getElementById('reg-email')
+const regPassword = document.getElementById('reg-password')
+const regConfirm = document.getElementById('reg-confirm')
+const registerError = document.getElementById('register-error')
 const cameraCode = document.getElementById('camera-code')
 const cameraError = document.getElementById('camera-error')
 const tabDashboard = document.getElementById('tab-dashboard')
+const tabRegister = document.getElementById('tab-register')
 const tabCamera = document.getElementById('tab-camera')
 
 function showError(el, msg) {
@@ -19,6 +25,13 @@ function showError(el, msg) {
   el.hidden = false
 }
 function hideError(el) { el.hidden = true }
+
+function showTab(activeTab, activeForm) {
+  ;[tabDashboard, tabRegister, tabCamera].forEach(t => t.classList.remove('active'))
+  ;[dashboardForm, registerForm, cameraForm].forEach(f => { f.hidden = true })
+  activeTab.classList.add('active')
+  activeForm.hidden = false
+}
 
 async function init() {
   const res = await fetch('/api/auth/first-run')
@@ -30,18 +43,9 @@ async function init() {
   }
 }
 
-tabDashboard.addEventListener('click', () => {
-  tabDashboard.classList.add('active')
-  tabCamera.classList.remove('active')
-  dashboardForm.hidden = false
-  cameraForm.hidden = true
-})
-tabCamera.addEventListener('click', () => {
-  tabCamera.classList.add('active')
-  tabDashboard.classList.remove('active')
-  cameraForm.hidden = false
-  dashboardForm.hidden = true
-})
+tabDashboard.addEventListener('click', () => showTab(tabDashboard, dashboardForm))
+tabRegister.addEventListener('click', () => showTab(tabRegister, registerForm))
+tabCamera.addEventListener('click', () => showTab(tabCamera, cameraForm))
 
 setupForm.addEventListener('submit', async (e) => {
   e.preventDefault()
@@ -75,6 +79,29 @@ dashboardForm.addEventListener('submit', async (e) => {
   const data = await res.json()
   if (!res.ok) {
     showError(loginError, data.error)
+    btn.disabled = false
+    return
+  }
+  window.location.href = '/'
+})
+
+registerForm.addEventListener('submit', async (e) => {
+  e.preventDefault()
+  hideError(registerError)
+  if (regPassword.value !== regConfirm.value) {
+    showError(registerError, 'Passwords do not match')
+    return
+  }
+  const btn = registerForm.querySelector('button')
+  btn.disabled = true
+  const res = await fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: regEmail.value, password: regPassword.value }),
+  })
+  const data = await res.json()
+  if (!res.ok) {
+    showError(registerError, data.error)
     btn.disabled = false
     return
   }
