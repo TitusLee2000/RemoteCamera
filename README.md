@@ -34,7 +34,36 @@ Repurpose old phones as live surveillance cameras — no app install required. W
 
 ---
 
-### Version 1 — LAN MVP ✅
+### Version 5 — Auth + Cloud Database ✅
+**Goal:** Secure the app with login and persist data in PostgreSQL on Render.
+
+**Features added:**
+- **Login page** — email/password auth via Passport.js; session stored in PostgreSQL (`connect-pg-simple`)
+- **First-run setup** — no users in DB → setup page creates the first admin account
+- **Self-registration** — new users can create their own accounts (operator role by default)
+- **Role-based access** — three roles: `admin`, `operator`, `viewer`; admin bypasses all role checks
+- **Camera slot system** — admin/operator creates named slots with nanoid codes; cameras authenticate using `?slot=CODE` in the URL
+- **User management panel** — admin can create/delete users from the dashboard
+- **PostgreSQL on Render** — all data (users, slots, sessions, recordings) persisted in a managed Postgres instance
+- **WebSocket heartbeat** — server pings all clients every 25s to keep connections alive on Render free tier
+- **Trust proxy** — `app.set('trust proxy', 1)` enabled for correct cookie behavior behind Render's proxy
+
+**Known issues:**
+- Dashboard slots/users tables may not display data on first load — see **Troubleshooting** below
+
+---
+
+### Version 4 — Motion Detection + Recording ✅
+Local recording with motion detection, auto-record on motion, and a recordings table in the dashboard.
+
+---
+
+### Version 3 — Multi-viewer + TURN ✅
+Multiple simultaneous viewers per camera, private TURN server support via Metered.ca.
+
+---
+
+### Version 1–2 — LAN MVP → Hosted ✅
 Core WebRTC camera streaming over a local network. Phone client captures video, dashboard views it, WebSocket server handles signaling.
 
 ## Live Demo
@@ -123,6 +152,43 @@ npm test
   signaling.js  Camera registry and message routing
   test/       Test suite
 ```
+
+---
+
+## Next Steps — Version 6 (Cloud Storage)
+
+Move recordings from local disk (lost on Render redeploy) to cloud object storage.
+
+**Recommended provider:** Cloudflare R2 (S3-compatible, free egress)
+
+**Recommended upload flow:** Server as middleman — camera uploads to server, server streams to R2. Simpler auth, no CORS issues.
+
+**Tasks:**
+- [ ] Provision R2 bucket and generate API credentials
+- [ ] Add `@aws-sdk/client-s3` to server dependencies (S3-compatible)
+- [ ] Update `/api/recordings/upload` to stream file to R2 instead of local disk
+- [ ] Update download endpoint to redirect to R2 signed URLs
+- [ ] Remove local `recordings/` directory dependency
+
+---
+
+## Troubleshooting
+
+### Dashboard slots/users tables show no data
+
+Open the browser console on the dashboard and run:
+
+```js
+fetch('/api/users').then(r => r.json()).then(console.log)
+fetch('/api/slots').then(r => r.json()).then(console.log)
+```
+
+- **401** → session is not persisting; check `SESSION_SECRET` and `NODE_ENV=production` in Render environment variables
+- **403** → logged-in user's role is not `admin`/`operator`; check role in DB with `node scripts/check-slots.js`
+- **Empty array `[]`** → no data in DB yet; create a slot or check that first-run setup completed
+- **Data returned** → rendering bug; open an issue
+
+---
 
 ## Stack
 
