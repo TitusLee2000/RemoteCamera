@@ -24,7 +24,13 @@
       "Bash(node scripts/migrate-recordings.js)",
       "Bash(timeout 8 node server.js)",
       "Bash(timeout 8 node index.js)",
-      "Bash(taskkill //F //IM node.exe)"
+      "Bash(taskkill //F //IM node.exe)",
+      "Skill(taches-cc-resources:create-slash-command)",
+      "Bash(node -e \"const t = JSON.parse\\(require\\('fs'\\).readFileSync\\('.taskmaster/tasks/tasks.json'\\)\\); t.tasks.forEach\\(x => console.log\\(x.id, x.status, x.title\\)\\)\")",
+      "Bash(node -e \"const t = JSON.parse\\(require\\('fs'\\).readFileSync\\('.taskmaster/tasks/tasks.json'\\)\\); console.log\\(Object.keys\\(t\\)\\)\")",
+      "Bash(node -e \"const t = JSON.parse\\(require\\('fs'\\).readFileSync\\('.taskmaster/tasks/tasks.json'\\)\\); console.log\\(JSON.stringify\\(t\\).slice\\(0,500\\)\\)\")",
+      "Bash(node -e \"const t = JSON.parse\\(require\\('fs'\\).readFileSync\\('.taskmaster/tasks/tasks.json'\\)\\); t.master.tasks.forEach\\(x => console.log\\(x.id, x.status, x.title\\)\\)\")",
+      "Bash(xargs grep *)"
     ]
   },
   "enableAllProjectMcpServers": true,
