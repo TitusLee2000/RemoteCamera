@@ -835,7 +835,7 @@ async function initSession() {
 // ============================================================
 async function fetchSlots() {
   const res = await fetch('/api/slots')
-  if (!res.ok) return
+  if (!res.ok) { console.error('fetchSlots failed', res.status, await res.text()); return }
   const slots = await res.json()
   renderSlots(slots)
 }
@@ -897,11 +897,12 @@ document.getElementById('slot-name-cancel')?.addEventListener('click', () => {
 document.getElementById('slot-name-submit')?.addEventListener('click', async () => {
   const name = document.getElementById('slot-name-input').value.trim()
   if (!name) return
-  await fetch('/api/slots', {
+  const res = await fetch('/api/slots', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name }),
   })
+  if (!res.ok) { console.error('createSlot failed', res.status, await res.text()); return }
   document.getElementById('add-slot-form').hidden = true
   document.getElementById('slot-name-input').value = ''
   fetchSlots()
@@ -912,7 +913,7 @@ document.getElementById('slot-name-submit')?.addEventListener('click', async () 
 // ============================================================
 async function fetchUsers() {
   const res = await fetch('/api/users')
-  if (!res.ok) return
+  if (!res.ok) { console.error('fetchUsers failed', res.status, await res.text()); return }
   renderUsers(await res.json())
 }
 

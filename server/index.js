@@ -26,6 +26,7 @@ export async function createApp() {
   await runMigrations()
 
   const app = express()
+  app.set('trust proxy', 1)
   app.use(express.json())
 
   // Session middleware
