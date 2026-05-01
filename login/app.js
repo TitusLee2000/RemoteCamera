@@ -59,7 +59,7 @@ setupForm.addEventListener('submit', async (e) => {
     btn.disabled = false
     return
   }
-  window.location.href = '/admin'
+  window.location.href = '/'
 })
 
 dashboardForm.addEventListener('submit', async (e) => {
@@ -78,7 +78,7 @@ dashboardForm.addEventListener('submit', async (e) => {
     btn.disabled = false
     return
   }
-  window.location.href = data.role === 'admin' ? '/admin' : '/'
+  window.location.href = '/'
 })
 
 cameraForm.addEventListener('submit', async (e) => {
