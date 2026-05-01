@@ -40,6 +40,7 @@ async function init() {
     setupSection.hidden = false
   } else {
     loginSection.hidden = false
+    showTab(tabDashboard, dashboardForm)
   }
 }
 
