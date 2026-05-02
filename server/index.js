@@ -96,7 +96,7 @@ export async function createApp() {
   })
 
   const httpServer = createServer(app)
-  const wss = new WebSocketServer({ server: httpServer, handleProtocols: () => false })
+  const wss = new WebSocketServer({ noServer: true })
 
   // WebSocket auth: parse session cookie before upgrading
   httpServer.on('upgrade', (req, socket, head) => {

@@ -896,13 +896,20 @@ document.getElementById('slot-name-cancel')?.addEventListener('click', () => {
 })
 document.getElementById('slot-name-submit')?.addEventListener('click', async () => {
   const name = document.getElementById('slot-name-input').value.trim()
+  const errEl = document.getElementById('slot-form-error')
+  errEl.hidden = true
   if (!name) return
   const res = await fetch('/api/slots', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name }),
   })
-  if (!res.ok) { console.error('createSlot failed', res.status, await res.text()); return }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    errEl.textContent = body.error ?? `Failed to create slot (${res.status})`
+    errEl.hidden = false
+    return
+  }
   document.getElementById('add-slot-form').hidden = true
   document.getElementById('slot-name-input').value = ''
   fetchSlots()

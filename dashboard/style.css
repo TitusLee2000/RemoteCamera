@@ -1091,6 +1091,7 @@ video:-webkit-full-screen {
   border-radius: 8px; color: var(--text, #f1f5f9); font-size: 0.875rem; min-width: 160px;
 }
 .code-masked { font-family: monospace; color: var(--text-dim, #94a3b8); margin-right: 6px; }
+.form-error { color: #ef4444; font-size: 0.85rem; }
 .btn-pill {
   padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border, #2a3358);
   background: transparent; color: var(--text-dim, #94a3b8); font-size: 0.75rem; cursor: pointer;

@@ -30,7 +30,10 @@
       "Bash(node -e \"const t = JSON.parse\\(require\\('fs'\\).readFileSync\\('.taskmaster/tasks/tasks.json'\\)\\); console.log\\(Object.keys\\(t\\)\\)\")",
       "Bash(node -e \"const t = JSON.parse\\(require\\('fs'\\).readFileSync\\('.taskmaster/tasks/tasks.json'\\)\\); console.log\\(JSON.stringify\\(t\\).slice\\(0,500\\)\\)\")",
       "Bash(node -e \"const t = JSON.parse\\(require\\('fs'\\).readFileSync\\('.taskmaster/tasks/tasks.json'\\)\\); t.master.tasks.forEach\\(x => console.log\\(x.id, x.status, x.title\\)\\)\")",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\titus\\\\OneDrive\\\\Desktop\\\\RemoteCamera\\\\server\" -Recurse -File)",
+      "Bash(Select-Object FullName)",
+      "Bash(del *)"
     ]
   },
   "enableAllProjectMcpServers": true,

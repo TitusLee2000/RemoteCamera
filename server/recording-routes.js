@@ -1,20 +1,10 @@
 import { Router } from 'express'
 import multer from 'multer'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
-import { unlink } from 'fs/promises'
-import { createReadStream } from 'fs'
 import { pool } from './db/index.js'
 import { requireAuth } from './auth/middleware.js'
+import { uploadToStorage, deleteFromStorage, getSignedDownloadUrl } from './storage.js'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const RECORDINGS_DIR = join(__dirname, 'recordings')
-
-const storage = multer.diskStorage({
-  destination: RECORDINGS_DIR,
-  filename: (_req, _file, cb) => cb(null, `${Date.now()}.webm`),
-})
-const upload = multer({ storage })
+const upload = multer({ storage: multer.memoryStorage() })
 
 export const recordingRouter = Router()
 
@@ -28,9 +18,13 @@ recordingRouter.post('/upload', upload.single('video'), async (req, res) => {
   if (rows.length === 0) return res.status(404).json({ error: 'Slot not found' })
 
   const id = `${slotId}_${Date.now()}`
+  const storageKey = `recordings/${id}.webm`
+
+  await uploadToStorage(storageKey, req.file.buffer, req.file.mimetype || 'video/webm')
+
   await pool.query(
-    'INSERT INTO recordings (id, slot_id, filename, start_time, duration_ms, file_size) VALUES ($1,$2,$3,$4,$5,$6)',
-    [id, slotId, req.file.filename, new Date(startTime), Number(duration) || 0, req.file.size]
+    'INSERT INTO recordings (id, slot_id, storage_key, start_time, duration_ms, file_size) VALUES ($1,$2,$3,$4,$5,$6)',
+    [id, slotId, storageKey, new Date(startTime), Number(duration) || 0, req.file.size]
   )
   res.status(201).json({ id, url: `/api/recordings/${id}/download` })
 })
@@ -54,7 +48,7 @@ recordingRouter.get('/', requireAuth(['operator', 'viewer']), async (req, res) =
   res.json(rows)
 })
 
-// Download — operators + viewers (own slot)
+// Download — operators + viewers (own slot); redirects to R2 signed URL
 recordingRouter.get('/:id/download', requireAuth(['operator', 'viewer']), async (req, res) => {
   const { rows } = await pool.query('SELECT * FROM recordings WHERE id = $1', [req.params.id])
   if (rows.length === 0) return res.status(404).json({ error: 'Not found' })
@@ -65,17 +59,15 @@ recordingRouter.get('/:id/download', requireAuth(['operator', 'viewer']), async 
     if (rec.slot_id !== slotId) return res.status(403).json({ error: 'Forbidden' })
   }
 
-  const filePath = join(RECORDINGS_DIR, rec.filename)
-  res.setHeader('Content-Type', 'video/webm')
-  res.setHeader('Content-Disposition', `attachment; filename="${rec.id}.webm"`)
-  createReadStream(filePath).pipe(res)
+  const signedUrl = await getSignedDownloadUrl(rec.storage_key)
+  res.redirect(signedUrl)
 })
 
 // Delete — operators only
 recordingRouter.delete('/:id', requireAuth('operator'), async (req, res) => {
   const { rows } = await pool.query('SELECT * FROM recordings WHERE id = $1', [req.params.id])
   if (rows.length === 0) return res.status(404).json({ error: 'Not found' })
-  try { await unlink(join(RECORDINGS_DIR, rows[0].filename)) } catch {}
+  try { await deleteFromStorage(rows[0].storage_key) } catch {}
   await pool.query('DELETE FROM recordings WHERE id = $1', [req.params.id])
   res.json({ ok: true })
 })
