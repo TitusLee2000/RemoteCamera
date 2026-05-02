@@ -4,22 +4,28 @@ import { pool } from '../db/index.js'
 import { requireAuth } from '../auth/middleware.js'
 
 const router = Router()
-router.use(requireAuth('admin'))
 
-router.get('/', async (_req, res) => {
+// Admins see all users; operators see only viewers
+router.get('/', requireAuth(['admin', 'operator']), async (req, res) => {
+  const isAdmin = req.user.role === 'admin'
   const { rows } = await pool.query(
-    'SELECT id, email, role, created_at FROM users ORDER BY created_at ASC'
+    isAdmin
+      ? 'SELECT id, email, role, created_at FROM users ORDER BY created_at ASC'
+      : "SELECT id, email, role, created_at FROM users WHERE role = 'viewer' ORDER BY created_at ASC"
   )
   res.json(rows)
 })
 
-router.post('/', async (req, res) => {
+// Admins can create any role; operators can only create viewers
+router.post('/', requireAuth(['admin', 'operator']), async (req, res) => {
   const { email, password, role } = req.body
   if (!email || !password || !role) {
     return res.status(400).json({ error: 'email, password, and role are required' })
   }
-  if (!['admin', 'operator', 'viewer'].includes(role)) {
-    return res.status(400).json({ error: 'role must be admin, operator, or viewer' })
+  const isAdmin = req.user.role === 'admin'
+  const allowedRoles = isAdmin ? ['admin', 'operator', 'viewer'] : ['viewer']
+  if (!allowedRoles.includes(role)) {
+    return res.status(403).json({ error: isAdmin ? 'Invalid role' : 'Operators can only create viewer accounts' })
   }
   if (password.length < 8) {
     return res.status(400).json({ error: 'password must be at least 8 characters' })
@@ -37,7 +43,8 @@ router.post('/', async (req, res) => {
   }
 })
 
-router.delete('/:id', async (req, res) => {
+// Delete — admin only
+router.delete('/:id', requireAuth('admin'), async (req, res) => {
   if (req.params.id === req.user.id) {
     return res.status(400).json({ error: 'Cannot delete your own account' })
   }

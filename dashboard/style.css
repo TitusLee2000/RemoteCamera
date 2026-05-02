@@ -1082,6 +1082,7 @@ video:-webkit-full-screen {
 .role-admin { background: rgba(239,68,68,.15); color: #fca5a5; }
 .role-operator { background: rgba(79,140,255,.15); color: #93c5fd; }
 .role-viewer { background: rgba(138,147,184,.15); color: #c5cce6; }
+.user-group-header { padding: 6px 12px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim, #94a3b8); background: var(--bg-elev-1, #1e293b); }
 .add-slot-form, .add-user-form {
   display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
   padding: 1rem 0; margin-bottom: 1rem;

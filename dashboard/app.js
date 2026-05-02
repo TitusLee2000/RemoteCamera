@@ -824,9 +824,14 @@ async function initSession() {
     document.getElementById('slots-section').hidden = false
     fetchSlots()
   }
-  if (user.role === 'admin') {
+  if (user.role === 'admin' || user.role === 'operator') {
     document.getElementById('admin-section').hidden = false
     fetchUsers()
+    if (user.role === 'operator') {
+      // Operators can only create viewer accounts
+      const select = document.getElementById('user-role-select')
+      Array.from(select.options).forEach(o => { if (o.value !== 'viewer') o.remove() })
+    }
   }
 }
 
@@ -927,15 +932,26 @@ async function fetchUsers() {
 function renderUsers(users) {
   const tbody = document.getElementById('users-tbody')
   tbody.innerHTML = ''
-  for (const u of users) {
-    const tr = document.createElement('tr')
-    tr.innerHTML = `
-      <td>${u.email}</td>
-      <td><span class="role-badge role-${u.role}">${u.role}</span></td>
-      <td>${new Date(u.created_at).toLocaleDateString()}</td>
-      <td><button class="btn-pill delete-user-btn" data-id="${u.id}">Delete</button></td>
-    `
-    tbody.appendChild(tr)
+  const isAdmin = window._userRole === 'admin'
+  const order = ['admin', 'operator', 'viewer']
+  const grouped = Object.fromEntries(order.map(r => [r, []]))
+  for (const u of users) grouped[u.role]?.push(u)
+
+  for (const role of order) {
+    if (grouped[role].length === 0) continue
+    const header = document.createElement('tr')
+    header.innerHTML = `<td colspan="4" class="user-group-header">${role.charAt(0).toUpperCase() + role.slice(1)}s</td>`
+    tbody.appendChild(header)
+    for (const u of grouped[role]) {
+      const tr = document.createElement('tr')
+      tr.innerHTML = `
+        <td>${u.email}</td>
+        <td><span class="role-badge role-${u.role}">${u.role}</span></td>
+        <td>${new Date(u.created_at).toLocaleDateString()}</td>
+        <td>${isAdmin ? `<button class="btn-pill delete-user-btn" data-id="${u.id}">Delete</button>` : ''}</td>
+      `
+      tbody.appendChild(tr)
+    }
   }
   tbody.querySelectorAll('.delete-user-btn').forEach((btn) => {
     btn.addEventListener('click', async () => {
