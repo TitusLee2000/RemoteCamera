@@ -33,7 +33,10 @@
       "Bash(xargs grep *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\titus\\\\OneDrive\\\\Desktop\\\\RemoteCamera\\\\server\" -Recurse -File)",
       "Bash(Select-Object FullName)",
-      "Bash(del *)"
+      "Bash(del *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\titus\\\\Vault-Of-Titus\" -Recurse -File)",
+      "Bash(Select-Object FullName, Length)",
+      "Bash(Format-Table -AutoSize)"
     ]
   },
   "enableAllProjectMcpServers": true,

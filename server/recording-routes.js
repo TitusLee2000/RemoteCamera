@@ -4,6 +4,18 @@ import { pool } from './db/index.js'
 import { requireAuth } from './auth/middleware.js'
 import { uploadToStorage, deleteFromStorage, getSignedDownloadUrl } from './storage.js'
 
+function mapRow(r) {
+  return {
+    id: r.id,
+    camId: r.slot_id,
+    storageKey: r.storage_key,
+    startTime: r.start_time,
+    duration: r.duration_ms,
+    fileSize: r.file_size,
+    uploadedAt: r.uploaded_at,
+  }
+}
+
 const upload = multer({ storage: multer.memoryStorage() })
 
 export const recordingRouter = Router()
@@ -45,7 +57,7 @@ recordingRouter.get('/', requireAuth(['operator', 'viewer']), async (req, res) =
     params = [slotId]
   }
   const { rows } = await pool.query(query, params)
-  res.json(rows)
+  res.json(rows.map(mapRow))
 })
 
 // Download — operators + viewers (own slot); redirects to R2 signed URL

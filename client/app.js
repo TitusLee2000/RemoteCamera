@@ -421,7 +421,7 @@ class RecordingManager {
     try {
       const form = new FormData();
       form.append('video', blob, 'recording.webm');
-      form.append('camId', camId);
+      form.append('slotId', camId);
       form.append('startTime', startTime);
       form.append('duration', String(duration));
 
