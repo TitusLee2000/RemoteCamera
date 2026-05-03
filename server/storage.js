@@ -19,10 +19,11 @@ export async function deleteFromStorage(key) {
   if (error) throw error
 }
 
-export async function getSignedDownloadUrl(key, expiresInSeconds = 3600) {
+export async function getSignedDownloadUrl(key, expiresInSeconds = 3600, forDownload = false) {
+  const opts = forDownload ? { download: true } : {}
   const { data, error } = await supabase.storage
     .from(STORAGE_BUCKET)
-    .createSignedUrl(key, expiresInSeconds)
+    .createSignedUrl(key, expiresInSeconds, opts)
   if (error) throw error
   return data.signedUrl
 }

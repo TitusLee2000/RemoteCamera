@@ -82,7 +82,8 @@ recordingRouter.get('/:id/download', requireAuth(['operator', 'viewer']), async 
     if (rec.slot_id !== slotId) return res.status(403).json({ error: 'Forbidden' })
   }
 
-  const signedUrl = await getSignedDownloadUrl(rec.storage_key)
+  const forDownload = req.query.dl === '1'
+  const signedUrl = await getSignedDownloadUrl(rec.storage_key, 3600, forDownload)
   res.redirect(signedUrl)
 })
 

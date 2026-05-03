@@ -72,10 +72,20 @@
         </div>
       </div>
 
+      <div class="recordings-bulk-bar" id="recordings-bulk-bar" hidden>
+        <span class="bulk-count" id="bulk-count">0 selected</span>
+        <button type="button" class="btn-pill btn-pill-download" id="bulk-download-btn">Download</button>
+        <button type="button" class="btn-pill btn-pill-delete" id="bulk-delete-btn">Delete</button>
+        <button type="button" class="btn-pill btn-pill-clear" id="bulk-clear-btn">Clear selection</button>
+      </div>
+
       <div class="recordings-table-wrap" id="recordings-table-wrap">
         <table class="recordings-table" aria-label="Recordings list">
           <thead>
             <tr>
+              <th scope="col" class="th-select">
+                <input type="checkbox" id="select-all-checkbox" class="rec-select-checkbox" aria-label="Select all recordings" />
+              </th>
               <th scope="col">Camera</th>
               <th scope="col">Date / Time</th>
               <th scope="col">Duration</th>

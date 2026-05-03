@@ -26,6 +26,7 @@ const motionEvents = []; // { camId, timestamp } — last 100 events
 const MOTION_ALERT_DURATION_MS = 5000;
 const MAX_LOG_ENTRIES = 100;
 let recordingsRefreshTimer = null;
+const selectedIds = new Set();
 
 // Stable viewer id for this browser tab
 const viewerId = 'viewer-' + Math.random().toString(36).slice(2, 10);
@@ -51,6 +52,14 @@ const recordingsCamFilter = document.getElementById('recordings-cam-filter');
 const refreshRecordingsBtn = document.getElementById('refresh-recordings-btn');
 const recordingsTbody = document.getElementById('recordings-tbody');
 const recordingsEmpty = document.getElementById('recordings-empty');
+
+// Bulk selection refs
+const selectAllCheckbox = document.getElementById('select-all-checkbox');
+const recordingsBulkBar = document.getElementById('recordings-bulk-bar');
+const bulkCount = document.getElementById('bulk-count');
+const bulkDownloadBtn = document.getElementById('bulk-download-btn');
+const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+const bulkClearBtn = document.getElementById('bulk-clear-btn');
 
 // Playback modal refs
 const playbackModal = document.getElementById('playback-modal');
@@ -724,27 +733,36 @@ function renderRecordingsTable(recordings) {
   recordingsEmpty.hidden = true;
 
   recordings.forEach((rec) => {
+    const checked = selectedIds.has(rec.id);
     const tr = document.createElement('tr');
+    if (checked) tr.classList.add('is-selected');
     tr.innerHTML = `
+      <td class="td-select">
+        <input type="checkbox" class="rec-select-checkbox" data-id="${escapeHtml(rec.id)}" ${checked ? 'checked' : ''} aria-label="Select recording" />
+      </td>
       <td><code class="rec-cam-id">${escapeHtml(rec.camId)}</code></td>
       <td class="rec-datetime">${fmtDateTime(rec.startTime)}</td>
       <td class="rec-duration">${fmtDuration(rec.duration)}</td>
       <td class="rec-size">${fmtSize(rec.fileSize)}</td>
       <td class="rec-actions">
-        <button type="button" class="btn-pill btn-pill-play" data-id="${escapeHtml(rec.id)}" aria-label="Play recording">Play</button>
-        <button type="button" class="btn-pill btn-pill-delete" data-id="${escapeHtml(rec.id)}" aria-label="Delete recording">Delete</button>
+        <button type="button" class="btn-pill btn-pill-play" aria-label="Play recording">Play</button>
+        <button type="button" class="btn-pill btn-pill-download" aria-label="Download recording">Download</button>
+        <button type="button" class="btn-pill btn-pill-delete" aria-label="Delete recording">Delete</button>
       </td>
     `;
 
-    tr.querySelector('.btn-pill-play').addEventListener('click', () => {
-      openPlaybackModal(rec);
+    tr.querySelector('.rec-select-checkbox').addEventListener('change', (e) => {
+      if (e.target.checked) { selectedIds.add(rec.id); tr.classList.add('is-selected'); }
+      else { selectedIds.delete(rec.id); tr.classList.remove('is-selected'); }
+      updateBulkBar();
     });
-    tr.querySelector('.btn-pill-delete').addEventListener('click', () => {
-      deleteRecording(rec.id);
-    });
+    tr.querySelector('.btn-pill-play').addEventListener('click', () => openPlaybackModal(rec));
+    tr.querySelector('.btn-pill-download').addEventListener('click', () => downloadRecording(rec.id));
+    tr.querySelector('.btn-pill-delete').addEventListener('click', () => deleteRecording(rec.id));
 
     recordingsTbody.appendChild(tr);
   });
+  updateBulkBar();
 }
 
 async function deleteRecording(id) {
@@ -752,6 +770,7 @@ async function deleteRecording(id) {
   try {
     const res = await fetch(`/api/recordings/${encodeURIComponent(id)}`, { method: 'DELETE' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    selectedIds.delete(id);
     fetchRecordings(recordingsCamFilter.value || undefined);
   } catch (err) {
     console.error('deleteRecording failed:', err);
@@ -805,6 +824,76 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+// ============================================================
+// Multi-select + bulk actions
+// ============================================================
+function updateBulkBar() {
+  const count = selectedIds.size;
+  recordingsBulkBar.hidden = count === 0;
+  bulkCount.textContent = `${count} selected`;
+
+  const checkboxes = recordingsTbody.querySelectorAll('.rec-select-checkbox');
+  if (checkboxes.length > 0) {
+    selectAllCheckbox.checked = count === checkboxes.length;
+    selectAllCheckbox.indeterminate = count > 0 && count < checkboxes.length;
+  } else {
+    selectAllCheckbox.checked = false;
+    selectAllCheckbox.indeterminate = false;
+  }
+}
+
+function downloadRecording(id) {
+  const a = document.createElement('a');
+  a.href = `/api/recordings/${encodeURIComponent(id)}/download?dl=1`;
+  a.download = '';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+async function downloadSelected() {
+  for (const id of selectedIds) {
+    downloadRecording(id);
+    await new Promise((r) => setTimeout(r, 400));
+  }
+}
+
+async function deleteSelected() {
+  const count = selectedIds.size;
+  if (!confirm(`Delete ${count} recording${count === 1 ? '' : 's'}? This cannot be undone.`)) return;
+  const ids = [...selectedIds];
+  await Promise.all(ids.map((id) =>
+    fetch(`/api/recordings/${encodeURIComponent(id)}`, { method: 'DELETE' })
+      .then(() => selectedIds.delete(id))
+      .catch((err) => console.error('bulk delete failed for', id, err))
+  ));
+  fetchRecordings(recordingsCamFilter.value || undefined);
+}
+
+selectAllCheckbox.addEventListener('change', () => {
+  const checkboxes = recordingsTbody.querySelectorAll('.rec-select-checkbox');
+  checkboxes.forEach((cb) => {
+    cb.checked = selectAllCheckbox.checked;
+    const row = cb.closest('tr');
+    if (selectAllCheckbox.checked) { selectedIds.add(cb.dataset.id); row?.classList.add('is-selected'); }
+    else { selectedIds.delete(cb.dataset.id); row?.classList.remove('is-selected'); }
+  });
+  updateBulkBar();
+});
+
+bulkDownloadBtn.addEventListener('click', downloadSelected);
+bulkDeleteBtn.addEventListener('click', deleteSelected);
+bulkClearBtn.addEventListener('click', () => {
+  selectedIds.clear();
+  recordingsTbody.querySelectorAll('.rec-select-checkbox').forEach((cb) => {
+    cb.checked = false;
+    cb.closest('tr')?.classList.remove('is-selected');
+  });
+  selectAllCheckbox.checked = false;
+  selectAllCheckbox.indeterminate = false;
+  updateBulkBar();
+});
 
 // Bootstrap
 refreshEmptyState();
