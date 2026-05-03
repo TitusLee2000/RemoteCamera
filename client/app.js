@@ -434,7 +434,8 @@ class RecordingManager {
         uploadStatus.textContent = 'Saved \u2713';
         uploadStatus.className = 'upload-status saved';
       } else {
-        throw new Error('HTTP ' + res.status);
+        const body = await res.json().catch(() => ({}));
+        throw new Error(`HTTP ${res.status}: ${body.error ?? ''} ${body.detail ?? ''}`.trim());
       }
     } catch (err) {
       console.error('[rec] upload failed', err);

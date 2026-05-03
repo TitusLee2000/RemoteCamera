@@ -32,12 +32,23 @@ recordingRouter.post('/upload', upload.single('video'), async (req, res) => {
   const id = `${slotId}_${Date.now()}`
   const storageKey = `recordings/${id}.webm`
 
-  await uploadToStorage(storageKey, req.file.buffer, req.file.mimetype || 'video/webm')
+  try {
+    await uploadToStorage(storageKey, req.file.buffer, req.file.mimetype || 'video/webm')
+  } catch (err) {
+    console.error('[recordings] Supabase upload failed:', err?.message ?? err)
+    return res.status(502).json({ error: 'Storage upload failed', detail: err?.message })
+  }
 
-  await pool.query(
-    'INSERT INTO recordings (id, slot_id, storage_key, start_time, duration_ms, file_size) VALUES ($1,$2,$3,$4,$5,$6)',
-    [id, slotId, storageKey, new Date(startTime), Number(duration) || 0, req.file.size]
-  )
+  try {
+    await pool.query(
+      'INSERT INTO recordings (id, slot_id, storage_key, start_time, duration_ms, file_size) VALUES ($1,$2,$3,$4,$5,$6)',
+      [id, slotId, storageKey, new Date(startTime), Number(duration) || 0, req.file.size]
+    )
+  } catch (err) {
+    console.error('[recordings] DB insert failed:', err?.message ?? err)
+    return res.status(500).json({ error: 'Database insert failed', detail: err?.message })
+  }
+
   res.status(201).json({ id, url: `/api/recordings/${id}/download` })
 })
 
