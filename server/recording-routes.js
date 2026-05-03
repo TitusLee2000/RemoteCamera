@@ -56,7 +56,7 @@ recordingRouter.post('/upload', upload.single('video'), async (req, res) => {
 recordingRouter.get('/', requireAuth(['operator', 'viewer']), async (req, res) => {
   const camId = req.query.camId
   let query, params
-  if (req.user?.role === 'operator') {
+  if (req.user?.role === 'operator' || req.user?.role === 'admin') {
     query = camId
       ? 'SELECT * FROM recordings WHERE slot_id = $1 ORDER BY uploaded_at DESC'
       : 'SELECT * FROM recordings ORDER BY uploaded_at DESC'
@@ -77,7 +77,7 @@ recordingRouter.get('/:id/download', requireAuth(['operator', 'viewer']), async 
   if (rows.length === 0) return res.status(404).json({ error: 'Not found' })
   const rec = rows[0]
 
-  if (req.user?.role !== 'operator') {
+  if (req.user?.role !== 'operator' && req.user?.role !== 'admin') {
     const slotId = req.session?.slotId
     if (rec.slot_id !== slotId) return res.status(403).json({ error: 'Forbidden' })
   }
