@@ -18,6 +18,8 @@ import {
   cameras, viewers, allClients, cameraLockStates, handleMessage, cleanup,
 } from './signaling.js'
 import { recordingRouter } from './recording-routes.js'
+import alertsRouter from './routes/alerts.js'
+import notificationsRouter from './routes/notifications.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const PgSession = connectPgSimple(session)
@@ -58,6 +60,8 @@ export async function createApp() {
   app.use('/api/users', usersRouter)
   app.use('/api/slots', slotsRouter)
   app.use('/api/recordings', recordingRouter)
+  app.use('/api/alerts', alertsRouter)
+  app.use('/api/notifications', notificationsRouter)
 
   // Login page (public)
   app.use('/login', express.static(join(__dirname, '../login')))

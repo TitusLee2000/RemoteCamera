@@ -36,7 +36,13 @@
       "Bash(del *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\titus\\\\Vault-Of-Titus\" -Recurse -File)",
       "Bash(Select-Object FullName, Length)",
-      "Bash(Format-Table -AutoSize)"
+      "Bash(Format-Table -AutoSize)",
+      "PowerShell(git *)",
+      "Bash(node --check routes/alerts.js)",
+      "Bash(node --check routes/notifications.js)",
+      "Bash(node --check services/alert-service.js)",
+      "Bash(node --check services/push-service.js)",
+      "Bash(node --check services/email-service.js)"
     ]
   },
   "enableAllProjectMcpServers": true,

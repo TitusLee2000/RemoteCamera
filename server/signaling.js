@@ -3,6 +3,7 @@
 // it only routes messages between cameras and viewers based on ids.
 
 import { pool } from './db/index.js'
+import { processDetectionEvent } from './services/alert-service.js'
 
 // cameras: camId → WebSocket
 export const cameras = new Map()
@@ -79,6 +80,8 @@ export function handleMessage(ws, msg) {
       return handleRecordingStop(ws, msg)
     case 'recording-status':
       return handleRecordingStatus(ws, msg)
+    case 'detection-event':
+      return handleDetectionEvent(ws, msg)
     default:
       console.warn(`[signaling] unknown message type: ${msg.type}`)
   }
@@ -300,6 +303,34 @@ function handleRecordingStatus(ws, msg) {
     return
   }
   const payload = { type: 'recording-status', camId, recording }
+  for (const { ws: vws, subscribedCamId } of viewers.values()) {
+    if (subscribedCamId === camId) {
+      send(vws, payload)
+    }
+  }
+}
+
+/**
+ * Camera → Server: AI detection results.
+ *   1. Run alert pipeline (cooldown, push, email) — fire-and-forget.
+ *   2. Forward the raw event to all viewers watching this camera so the
+ *      dashboard can render bounding boxes.
+ * Payload: { type: 'detection-event', camId, detections, timestamp }
+ */
+function handleDetectionEvent(ws, msg) {
+  const { camId, detections, timestamp } = msg
+  if (!camId || !Array.isArray(detections)) {
+    console.warn('[signaling] detection-event missing camId or detections')
+    return
+  }
+
+  // Fire-and-forget alert processing (DB + dispatch).
+  Promise.resolve()
+    .then(() => processDetectionEvent(camId, detections, timestamp))
+    .catch((err) => console.error('[signaling] detection processing error:', err))
+
+  // Forward to subscribed viewers.
+  const payload = { type: 'detection-event', camId, detections, timestamp }
   for (const { ws: vws, subscribedCamId } of viewers.values()) {
     if (subscribedCamId === camId) {
       send(vws, payload)

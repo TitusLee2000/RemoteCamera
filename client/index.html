@@ -6,6 +6,8 @@
   <meta name="theme-color" content="#0f172a" />
   <title>RemoteCamera - Phone Client</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest/dist/coco-ssd.min.js"></script>
 </head>
 <body>
   <main class="app">
@@ -22,8 +24,28 @@
 
     <section class="video-wrap">
       <video id="preview" playsinline muted autoplay></video>
+      <canvas id="detectionOverlay" class="detection-overlay"></canvas>
       <div class="video-placeholder" id="videoPlaceholder">
         <span>Camera preview will appear here</span>
+      </div>
+    </section>
+
+    <!-- Hidden canvas used to capture video frames for AI detection -->
+    <canvas id="detectionCaptureCanvas" class="detection-capture-canvas"></canvas>
+
+    <section class="ai-controls" id="aiControls">
+      <div class="ai-status-row">
+        <span class="ai-label">AI</span>
+        <span class="ai-status ai-status-off" id="aiStatus">Off</span>
+      </div>
+      <div class="ai-detected-row" id="aiDetectedRow" hidden>
+        <span class="ai-detected-label">Detected:</span>
+        <span class="ai-detected-list" id="aiDetectedList">—</span>
+      </div>
+      <div class="ai-interval-row" id="aiIntervalRow" hidden>
+        <label for="detectionIntervalSlider" class="ai-interval-label">Detection Interval</label>
+        <span class="ai-interval-value" id="detectionIntervalValue">2.0s</span>
+        <input type="range" id="detectionIntervalSlider" class="ai-interval-slider" min="1000" max="10000" step="500" value="2000" />
       </div>
     </section>
 

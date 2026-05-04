@@ -167,6 +167,10 @@ function handleServerMessage(msg) {
       handleMotion(msg.camId, msg.timestamp);
       break;
 
+    case 'detection-event':
+      handleDetectionEvent(msg);
+      break;
+
     case 'lock-state':
       handleLockState(msg.camId, msg.locked);
       break;
@@ -538,6 +542,11 @@ function renderCard(camId) {
     if (cameras[camId]) cameras[camId].autoRecordDuration = secs * 1000;
   });
 
+  const alertsBtn = node.querySelector('.alerts-btn');
+  if (alertsBtn) {
+    alertsBtn.addEventListener('click', () => openAlertConfig(camId, camId));
+  }
+
   grid.appendChild(node);
   refreshEmptyState();
 }
@@ -900,6 +909,9 @@ refreshEmptyState();
 connect();
 fetchRecordings();
 startRecordingsAutoRefresh();
+registerServiceWorker();
+loadAlertLog();
+startAlertLogAutoRefresh();
 
 // ============================================================
 // Session + role init
@@ -1085,3 +1097,264 @@ window.fetch = async (...args) => {
 }
 
 initSession()
+
+// ============================================================
+// Service Worker registration (Web Push)
+// ============================================================
+async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+  try {
+    await navigator.serviceWorker.register('/sw.js')
+  } catch (err) {
+    console.warn('[push] SW registration failed:', err)
+  }
+}
+
+// ============================================================
+// AI Detection overlay (dashboard side)
+// ============================================================
+const DETECTION_OVERLAY_DURATION_MS = 3000
+const VEHICLE_CLASSES = new Set(['car', 'truck', 'bus', 'motorcycle', 'bicycle'])
+const ANIMAL_CLASSES  = new Set(['cat', 'dog', 'bird', 'horse', 'cow', 'sheep'])
+
+function detectionBadgeClass(cls) {
+  if (cls === 'person') return 'person'
+  if (VEHICLE_CLASSES.has(cls)) return 'vehicle'
+  if (ANIMAL_CLASSES.has(cls)) return 'animal'
+  return ''
+}
+
+function handleDetectionEvent(msg) {
+  const { camId, detections, timestamp } = msg
+  if (!cameras[camId]) return
+
+  const card = getCardEl(camId)
+  if (!card) return
+
+  const overlay = card.querySelector('.detection-overlay')
+  if (!overlay) return
+
+  // Build badge HTML for tracked classes only
+  const seen = new Map()
+  for (const d of (detections || [])) {
+    if (!d || !d.class) continue
+    const prev = seen.get(d.class) ?? 0
+    if (d.score > prev) seen.set(d.class, d.score)
+  }
+
+  if (seen.size === 0) return
+
+  const badges = [...seen.entries()].map(([cls, score]) => {
+    const kind = detectionBadgeClass(cls)
+    return `<span class="detection-badge${kind ? ' ' + kind : ''}">${cls} <span class="conf">${(score * 100).toFixed(0)}%</span></span>`
+  }).join('')
+  overlay.innerHTML = badges
+  overlay.classList.add('is-active')
+
+  clearTimeout(cameras[camId].detectionTimer)
+  cameras[camId].detectionTimer = setTimeout(() => {
+    overlay.classList.remove('is-active')
+  }, DETECTION_OVERLAY_DURATION_MS)
+}
+
+// ============================================================
+// Alert Log
+// ============================================================
+const alertLogTbody = document.getElementById('alert-log-tbody')
+const alertLogEmpty = document.getElementById('alert-log-empty')
+const refreshAlertLogBtn = document.getElementById('refresh-alert-log-btn')
+let alertLogRefreshTimer = null
+
+function startAlertLogAutoRefresh() {
+  clearInterval(alertLogRefreshTimer)
+  alertLogRefreshTimer = setInterval(loadAlertLog, 30000)
+}
+
+async function loadAlertLog() {
+  try {
+    const res = await fetch('/api/alerts/log')
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const rows = await res.json()
+    renderAlertLog(rows)
+  } catch (err) {
+    console.warn('[alert-log] fetch failed:', err)
+  }
+}
+
+function renderAlertLog(rows) {
+  if (!alertLogTbody) return
+  alertLogTbody.innerHTML = ''
+  if (!rows || rows.length === 0) {
+    if (alertLogEmpty) alertLogEmpty.hidden = false
+    return
+  }
+  if (alertLogEmpty) alertLogEmpty.hidden = true
+  for (const row of rows) {
+    const tr = document.createElement('tr')
+    tr.innerHTML = `
+      <td>${fmtDateTime(row.alertedAt)}</td>
+      <td><code>${escapeHtml(row.slotName ?? row.slotId ?? '—')}</code></td>
+      <td><span class="detection-badge ${detectionBadgeClass(row.detectedClass)}">${escapeHtml(row.detectedClass)}</span></td>
+      <td>${row.confidence != null ? (row.confidence * 100).toFixed(0) + '%' : '—'}</td>
+      <td>${row.pushSent ? '✓' : '—'}</td>
+      <td>${row.emailSent ? '✓' : '—'}</td>
+    `
+    alertLogTbody.appendChild(tr)
+  }
+}
+
+if (refreshAlertLogBtn) {
+  refreshAlertLogBtn.addEventListener('click', loadAlertLog)
+}
+
+// ============================================================
+// Alert configuration modal
+// ============================================================
+const alertModal       = document.getElementById('alert-config-modal')
+const alertModalClose  = document.getElementById('alert-modal-close-btn')
+const alertModalBack   = document.getElementById('alert-modal-backdrop')
+const alertSlotName    = document.getElementById('alert-modal-slot-name')
+const alertEnabled     = document.getElementById('alert-enabled')
+const alertClassCbs    = () => document.querySelectorAll('.alert-class-cb')
+const alertConfidence  = document.getElementById('alert-confidence')
+const alertConfValue   = document.getElementById('alert-confidence-value')
+const alertCooldown    = document.getElementById('alert-cooldown')
+const alertPushEnabled = document.getElementById('alert-push-enabled')
+const alertPushSetup   = document.getElementById('alert-push-setup')
+const alertEmailEnabled= document.getElementById('alert-email-enabled')
+const alertEmailAddr   = document.getElementById('alert-email-address')
+const alertSaveBtn     = document.getElementById('alert-save-btn')
+const alertCancelBtn   = document.getElementById('alert-cancel-btn')
+const alertError       = document.getElementById('alert-modal-error')
+
+let _alertCurrentSlotId = null
+
+if (alertConfidence) {
+  alertConfidence.addEventListener('input', () => {
+    if (alertConfValue) alertConfValue.textContent = alertConfidence.value + '%'
+  })
+}
+
+function openAlertConfig(slotId, slotName) {
+  _alertCurrentSlotId = slotId
+  if (alertSlotName) alertSlotName.textContent = slotName || slotId
+  if (alertError) { alertError.hidden = true; alertError.textContent = '' }
+
+  fetch('/api/alerts/rules')
+    .then((r) => r.json())
+    .then((rules) => {
+      const rule = (rules || []).find((r) => r.slotId === slotId) || {}
+      if (alertEnabled) alertEnabled.checked = !!rule.enabled
+      alertClassCbs().forEach((cb) => {
+        cb.checked = Array.isArray(rule.objectClasses) && rule.objectClasses.includes(cb.value)
+      })
+      if (alertConfidence) {
+        const pct = rule.minConfidence != null ? Math.round(rule.minConfidence * 100) : 70
+        alertConfidence.value = pct
+        if (alertConfValue) alertConfValue.textContent = pct + '%'
+      }
+      if (alertCooldown) alertCooldown.value = rule.cooldownSeconds ?? 60
+      if (alertPushEnabled) alertPushEnabled.checked = !!rule.pushEnabled
+      if (alertEmailEnabled) alertEmailEnabled.checked = !!rule.emailEnabled
+      if (alertEmailAddr) alertEmailAddr.value = rule.emailAddress || ''
+    })
+    .catch((err) => console.warn('[alert-config] failed to load rules', err))
+
+  if (alertModal) alertModal.hidden = false
+}
+
+function closeAlertModal() {
+  if (alertModal) alertModal.hidden = true
+  _alertCurrentSlotId = null
+}
+
+if (alertModalClose) alertModalClose.addEventListener('click', closeAlertModal)
+if (alertModalBack)  alertModalBack.addEventListener('click', closeAlertModal)
+if (alertCancelBtn)  alertCancelBtn.addEventListener('click', closeAlertModal)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && alertModal && !alertModal.hidden) closeAlertModal()
+})
+
+if (alertSaveBtn) {
+  alertSaveBtn.addEventListener('click', async () => {
+    if (!_alertCurrentSlotId) return
+    const objectClasses = [...alertClassCbs()].filter((cb) => cb.checked).map((cb) => cb.value)
+    const body = {
+      enabled: alertEnabled?.checked ?? false,
+      objectClasses,
+      minConfidence: (Number(alertConfidence?.value ?? 70)) / 100,
+      cooldownSeconds: Number(alertCooldown?.value ?? 60),
+      pushEnabled: alertPushEnabled?.checked ?? false,
+      emailEnabled: alertEmailEnabled?.checked ?? false,
+      emailAddress: alertEmailAddr?.value.trim() || null,
+    }
+    try {
+      const res = await fetch(`/api/alerts/rules/${encodeURIComponent(_alertCurrentSlotId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        if (alertError) { alertError.textContent = err.error ?? `Save failed (${res.status})`; alertError.hidden = false }
+        return
+      }
+      closeAlertModal()
+    } catch (err) {
+      if (alertError) { alertError.textContent = 'Save failed — check connection'; alertError.hidden = false }
+    }
+  })
+}
+
+// ============================================================
+// Push notification subscription
+// ============================================================
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const raw = atob(base64)
+  return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)))
+}
+
+if (alertPushSetup) {
+  alertPushSetup.addEventListener('click', async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      alert('Push notifications are not supported in this browser.')
+      return
+    }
+    try {
+      const perm = await Notification.requestPermission()
+      if (perm !== 'granted') {
+        alert('Notification permission denied.')
+        return
+      }
+      const keyRes = await fetch('/api/notifications/vapid-public-key')
+      if (!keyRes.ok) {
+        alert('Push not configured on server (VAPID keys missing).')
+        return
+      }
+      const { publicKey } = await keyRes.json()
+
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      })
+
+      const res = await fetch('/api/notifications/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+      if (alertPushEnabled) alertPushEnabled.checked = true
+      alertPushSetup.textContent = 'Enabled ✓'
+      alertPushSetup.disabled = true
+    } catch (err) {
+      console.error('[push] subscription failed', err)
+      alert('Failed to enable push notifications: ' + (err.message || err))
+    }
+  })
+}
+

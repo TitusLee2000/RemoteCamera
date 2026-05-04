@@ -99,6 +99,29 @@
       </div>
     </section>
 
+    <section class="alert-log-section" id="alert-log-section">
+      <div class="recordings-header">
+        <h2>Alert Log</h2>
+        <button type="button" class="btn btn-ghost" id="refresh-alert-log-btn">Refresh</button>
+      </div>
+      <div class="recordings-table-wrap">
+        <table class="recordings-table" id="alert-log-table" aria-label="Alert log">
+          <thead>
+            <tr>
+              <th scope="col">Time</th>
+              <th scope="col">Camera</th>
+              <th scope="col">Detected</th>
+              <th scope="col">Confidence</th>
+              <th scope="col">Push</th>
+              <th scope="col">Email</th>
+            </tr>
+          </thead>
+          <tbody id="alert-log-tbody"></tbody>
+        </table>
+        <p class="recordings-empty" id="alert-log-empty" hidden>No alerts yet.</p>
+      </div>
+    </section>
+
     <section class="slots-section" id="slots-section" hidden>
       <div class="section-head">
         <h2>Camera Slots</h2>
@@ -191,6 +214,7 @@
             <span class="placeholder-text">Press View to start stream</span>
           </div>
         </div>
+        <div class="detection-overlay" aria-hidden="true"></div>
       </div>
 
       <div class="sensitivity-section">
@@ -234,9 +258,91 @@
             <path d="M3 7V3h4M21 7V3h-4M3 17v4h4M21 17v4h-4"/>
           </svg>
         </button>
+        <button
+          type="button"
+          class="btn btn-ghost alerts-btn"
+          aria-label="Configure alerts"
+          title="Configure alerts"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+          </svg>
+          <span class="alerts-btn-text">Alerts</span>
+        </button>
       </footer>
     </article>
   </template>
+
+  <!-- Alert configuration modal -->
+  <div id="alert-config-modal" class="modal" role="dialog" aria-modal="true" aria-label="Alert configuration" hidden>
+    <div class="modal-backdrop" id="alert-modal-backdrop"></div>
+    <div class="modal-inner">
+      <header class="modal-head">
+        <h3>Alert Rules &mdash; <span id="alert-modal-slot-name"></span></h3>
+        <button type="button" class="playback-close-btn" id="alert-modal-close-btn" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </header>
+      <div class="modal-body">
+        <label class="modal-row">
+          <input type="checkbox" id="alert-enabled">
+          <span>Enable alerts</span>
+        </label>
+
+        <fieldset class="modal-fieldset">
+          <legend>Detect objects</legend>
+          <div class="checkbox-grid">
+            <label><input type="checkbox" class="alert-class-cb" value="person"> Person</label>
+            <label><input type="checkbox" class="alert-class-cb" value="car"> Car</label>
+            <label><input type="checkbox" class="alert-class-cb" value="truck"> Truck</label>
+            <label><input type="checkbox" class="alert-class-cb" value="bus"> Bus</label>
+            <label><input type="checkbox" class="alert-class-cb" value="motorcycle"> Motorcycle</label>
+            <label><input type="checkbox" class="alert-class-cb" value="bicycle"> Bicycle</label>
+            <label><input type="checkbox" class="alert-class-cb" value="cat"> Cat</label>
+            <label><input type="checkbox" class="alert-class-cb" value="dog"> Dog</label>
+            <label><input type="checkbox" class="alert-class-cb" value="bird"> Bird</label>
+            <label><input type="checkbox" class="alert-class-cb" value="horse"> Horse</label>
+          </div>
+        </fieldset>
+
+        <label class="modal-row">
+          <span>Min confidence:</span>
+          <input type="range" id="alert-confidence" min="50" max="95" value="70">
+          <span id="alert-confidence-value">70%</span>
+        </label>
+
+        <label class="modal-row">
+          <span>Cooldown (seconds):</span>
+          <input type="number" id="alert-cooldown" min="10" max="3600" value="60">
+        </label>
+
+        <label class="modal-row">
+          <input type="checkbox" id="alert-push-enabled">
+          <span>Push notifications</span>
+          <button type="button" class="btn-pill" id="alert-push-setup">Enable</button>
+        </label>
+
+        <label class="modal-row">
+          <input type="checkbox" id="alert-email-enabled">
+          <span>Email alerts</span>
+        </label>
+
+        <label class="modal-row">
+          <span>Email:</span>
+          <input type="email" id="alert-email-address" placeholder="you@example.com">
+        </label>
+
+        <div id="alert-modal-error" class="form-error" hidden></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" id="alert-save-btn">Save</button>
+        <button type="button" class="btn btn-ghost" id="alert-cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Playback modal -->
   <div class="playback-modal" id="playback-modal" role="dialog" aria-modal="true" aria-label="Recording playback" hidden>

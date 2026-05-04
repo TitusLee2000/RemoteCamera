@@ -65,6 +65,16 @@ const uploadStatus = document.getElementById('uploadStatus');
 const autoRecordToggle = document.getElementById('autoRecordToggle');
 const autoRecordDurationInput = document.getElementById('autoRecordDuration');
 
+// AI detection DOM
+const aiStatusEl = document.getElementById('aiStatus');
+const aiDetectedRow = document.getElementById('aiDetectedRow');
+const aiDetectedList = document.getElementById('aiDetectedList');
+const aiIntervalRow = document.getElementById('aiIntervalRow');
+const detectionIntervalSlider = document.getElementById('detectionIntervalSlider');
+const detectionIntervalValueEl = document.getElementById('detectionIntervalValue');
+const detectionCaptureCanvas = document.getElementById('detectionCaptureCanvas');
+const detectionOverlayCanvas = document.getElementById('detectionOverlay');
+
 if (camIdDisplay) camIdDisplay.textContent = 'Connecting…'
 
 // ---------- UI helpers ----------
@@ -134,6 +144,12 @@ startBtn.addEventListener('click', async () => {
 
   // 3) Init recording manager with the live stream.
   initRecordingManager();
+
+  // 4) Kick off TF.js object detection (model load + detection loop).
+  //    Failures here must not break streaming/recording.
+  startObjectDetection().catch((err) => {
+    console.warn('[ai] object detection failed to start', err);
+  });
 
   startBtn.hidden = true;
   stopBtn.hidden = false;
@@ -526,6 +542,7 @@ function teardown(finalState) {
   }
 
   stopMotionDetection();
+  stopObjectDetection();
 
   previewVideo.srcObject = null;
   placeholder.hidden = false;
@@ -685,4 +702,262 @@ lockOverlay.addEventListener('mousedown', (e) => {
 lockOverlay.addEventListener('mouseup', (e) => {
   const delta = mouseStartY - e.clientY;
   if (delta > 60) deactivateLock();
+});
+
+// ---------- AI / TensorFlow.js object detection ----------
+// Uses COCO-SSD via globally loaded `cocoSsd` (script tag in index.html).
+// Detection failures must never break streaming/recording.
+
+const TRACKED_CLASSES = new Set([
+  'person', 'car', 'truck', 'bus', 'motorcycle', 'bicycle',
+  'cat', 'dog', 'bird', 'horse',
+]);
+const VEHICLE_CLASSES = new Set(['car', 'truck', 'bus', 'motorcycle', 'bicycle']);
+const ANIMAL_CLASSES  = new Set(['cat', 'dog', 'bird', 'horse', 'cow', 'sheep']);
+const DETECTION_MIN_CONFIDENCE = 0.5;
+
+let detectionModel = null;
+let detectionIntervalMs = 2000;
+let detectionTimer = null;
+let detectionInFlight = false;
+let detectionLoading = false;
+let lastDetectionResults = [];
+
+if (detectionIntervalSlider) {
+  detectionIntervalMs = Number(detectionIntervalSlider.value) || 2000;
+  detectionIntervalValueEl.textContent = (detectionIntervalMs / 1000).toFixed(1) + 's';
+  detectionIntervalSlider.addEventListener('input', () => {
+    detectionIntervalMs = Number(detectionIntervalSlider.value) || 2000;
+    detectionIntervalValueEl.textContent = (detectionIntervalMs / 1000).toFixed(1) + 's';
+    // Restart loop with new interval if currently running.
+    if (detectionTimer) {
+      clearInterval(detectionTimer);
+      detectionTimer = setInterval(runDetectionTick, detectionIntervalMs);
+    }
+  });
+}
+
+function setAiStatus(label, kind /* 'off' | 'loading' | 'active' | 'error' */) {
+  if (!aiStatusEl) return;
+  aiStatusEl.textContent = label;
+  aiStatusEl.className = 'ai-status ai-status-' + kind;
+}
+
+function showAiIntervalControl(show) {
+  if (aiIntervalRow) aiIntervalRow.hidden = !show;
+}
+
+async function loadDetectionModel() {
+  if (detectionModel) return detectionModel;
+  if (typeof cocoSsd === 'undefined' || !cocoSsd || typeof cocoSsd.load !== 'function') {
+    console.warn('[ai] cocoSsd is not available — TF.js scripts may have failed to load');
+    setAiStatus('Unavailable', 'error');
+    return null;
+  }
+  detectionLoading = true;
+  setAiStatus('Loading…', 'loading');
+  try {
+    detectionModel = await cocoSsd.load();
+    console.log('[ai] COCO-SSD model loaded');
+    return detectionModel;
+  } catch (err) {
+    console.warn('[ai] failed to load COCO-SSD model', err);
+    setAiStatus('Error', 'error');
+    return null;
+  } finally {
+    detectionLoading = false;
+  }
+}
+
+async function startObjectDetection() {
+  // Only run when streaming is active.
+  if (!localStream) return;
+
+  showAiIntervalControl(true);
+
+  const model = await loadDetectionModel();
+  if (!model) {
+    // Already showed status (Unavailable/Error). Skip starting the loop.
+    return;
+  }
+
+  // Wait for video metadata if needed so we know frame dimensions.
+  if (previewVideo.readyState < 2) {
+    await new Promise((resolve) => {
+      previewVideo.addEventListener('loadeddata', resolve, { once: true });
+    });
+  }
+
+  setAiStatus('Active', 'active');
+  if (aiDetectedRow) aiDetectedRow.hidden = false;
+
+  // Kick off the periodic detection loop.
+  if (detectionTimer) clearInterval(detectionTimer);
+  detectionTimer = setInterval(runDetectionTick, detectionIntervalMs);
+  // Also run once immediately so the user sees feedback fast.
+  runDetectionTick();
+}
+
+function stopObjectDetection() {
+  if (detectionTimer) {
+    clearInterval(detectionTimer);
+    detectionTimer = null;
+  }
+  detectionInFlight = false;
+  lastDetectionResults = [];
+  clearDetectionOverlay();
+  if (aiDetectedRow) aiDetectedRow.hidden = true;
+  if (aiDetectedList) aiDetectedList.textContent = '—';
+  showAiIntervalControl(false);
+  setAiStatus('Off', 'off');
+}
+
+async function runDetectionTick() {
+  if (detectionInFlight) return;
+  if (!detectionModel) return;
+  if (!localStream) return;
+  // Skip while document is hidden — saves battery and avoids stale frames.
+  if (document.hidden) return;
+  if (previewVideo.readyState < 2) return;
+
+  const vw = previewVideo.videoWidth;
+  const vh = previewVideo.videoHeight;
+  if (!vw || !vh) return;
+
+  detectionInFlight = true;
+  try {
+    // Capture current frame onto the hidden canvas at the video's native size.
+    if (detectionCaptureCanvas.width !== vw) detectionCaptureCanvas.width = vw;
+    if (detectionCaptureCanvas.height !== vh) detectionCaptureCanvas.height = vh;
+    const ctx = detectionCaptureCanvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(previewVideo, 0, 0, vw, vh);
+
+    const raw = await detectionModel.detect(detectionCaptureCanvas);
+
+    // Filter to >= 0.5 confidence (server applies per-slot rules separately).
+    const filtered = (raw || []).filter((d) => (d && typeof d.score === 'number' && d.score >= DETECTION_MIN_CONFIDENCE));
+
+    // Normalize shape for the wire: { class, score, bbox: [x,y,w,h] }
+    const payload = filtered.map((d) => ({
+      class: d.class,
+      score: d.score,
+      bbox: Array.isArray(d.bbox) ? d.bbox : [0, 0, 0, 0],
+    }));
+
+    lastDetectionResults = payload;
+    drawDetectionOverlay(payload, vw, vh);
+    updateDetectedClassesUi(payload);
+
+    // Send to server when WS is open and registration is confirmed.
+    if (camId && ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(JSON.stringify({
+          type: 'detection-event',
+          camId,
+          detections: payload,
+          timestamp: Date.now(),
+        }));
+      } catch (err) {
+        console.warn('[ai] failed to send detection-event', err);
+      }
+    }
+  } catch (err) {
+    console.warn('[ai] detection tick failed', err);
+  } finally {
+    detectionInFlight = false;
+  }
+}
+
+function updateDetectedClassesUi(detections) {
+  if (!aiDetectedList) return;
+  // Show a deduped list of tracked classes detected this cycle, with top score.
+  const byClass = new Map();
+  for (const d of detections) {
+    if (!TRACKED_CLASSES.has(d.class)) continue;
+    const prev = byClass.get(d.class) ?? 0;
+    if (d.score > prev) byClass.set(d.class, d.score);
+  }
+  if (byClass.size === 0) {
+    aiDetectedList.textContent = '—';
+    return;
+  }
+  const parts = [];
+  for (const [cls, score] of byClass) {
+    parts.push(`${cls} ${(score * 100).toFixed(0)}%`);
+  }
+  aiDetectedList.textContent = parts.join(', ');
+}
+
+function colorForClass(cls) {
+  if (cls === 'person') return '#ef4444';      // red
+  if (VEHICLE_CLASSES.has(cls)) return '#3b82f6'; // blue
+  if (ANIMAL_CLASSES.has(cls))  return '#22c55e'; // green
+  return '#facc15';                              // yellow fallback
+}
+
+function clearDetectionOverlay() {
+  if (!detectionOverlayCanvas) return;
+  const ctx = detectionOverlayCanvas.getContext('2d');
+  if (!ctx) return;
+  ctx.clearRect(0, 0, detectionOverlayCanvas.width, detectionOverlayCanvas.height);
+}
+
+function drawDetectionOverlay(detections, sourceW, sourceH) {
+  if (!detectionOverlayCanvas) return;
+  // Match overlay to the displayed video element so boxes line up with what
+  // the user sees (preview uses object-fit: cover).
+  const rect = previewVideo.getBoundingClientRect();
+  const cw = Math.max(1, Math.round(rect.width));
+  const ch = Math.max(1, Math.round(rect.height));
+  if (detectionOverlayCanvas.width !== cw) detectionOverlayCanvas.width = cw;
+  if (detectionOverlayCanvas.height !== ch) detectionOverlayCanvas.height = ch;
+
+  const ctx = detectionOverlayCanvas.getContext('2d');
+  ctx.clearRect(0, 0, cw, ch);
+
+  // Compute object-fit: cover transform from source frame to displayed canvas.
+  const scale = Math.max(cw / sourceW, ch / sourceH);
+  const drawW = sourceW * scale;
+  const drawH = sourceH * scale;
+  const offX  = (cw - drawW) / 2;
+  const offY  = (ch - drawH) / 2;
+
+  ctx.lineWidth = 2;
+  ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  ctx.textBaseline = 'top';
+
+  for (const det of detections) {
+    const [x, y, w, h] = det.bbox || [0, 0, 0, 0];
+    const bx = offX + x * scale;
+    const by = offY + y * scale;
+    const bw = w * scale;
+    const bh = h * scale;
+
+    const color = colorForClass(det.class);
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.strokeRect(bx, by, bw, bh);
+
+    const label = `${det.class} ${(det.score * 100).toFixed(0)}%`;
+    const padX = 4, padY = 2;
+    const textW = ctx.measureText(label).width + padX * 2;
+    const textH = 16;
+    const labelY = by - textH >= 0 ? by - textH : by;
+    ctx.fillRect(bx, labelY, textW, textH);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillText(label, bx + padX, labelY + padY);
+  }
+}
+
+// Pause/resume detection on tab visibility changes. We keep the timer running
+// but the tick early-returns when document.hidden is true; this also avoids
+// piling up promise rejections from an inactive tab.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    // Just clear current overlay; tick handler will skip running.
+    clearDetectionOverlay();
+  } else if (detectionModel && detectionTimer) {
+    // Run a fresh tick when visible again.
+    runDetectionTick();
+  }
 });

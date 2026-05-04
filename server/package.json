@@ -21,9 +21,11 @@
     "express-session": "^1.19.0",
     "multer": "^1.4.5-lts.1",
     "nanoid": "^5.1.9",
+    "nodemailer": "^6.10.1",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "pg": "^8.20.0",
+    "web-push": "^3.6.7",
     "ws": "^8.18.0"
   }
 }
